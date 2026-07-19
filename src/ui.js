@@ -1,0 +1,232 @@
+// UI — Saaltext-Panel, Sammlung (Warenkorb), Kasse, Saal-Navigation.
+// Jedes Werk ist ein Unikat: es kann nur einmal in die Sammlung,
+// und nach dem Erwerb ist es dauerhaft als „Verkauft“ markiert.
+
+import { raeume, raumById, werkById, formatPreis, bildThumbnail } from "./katalog.js";
+
+const LS_SAMMLUNG = "galerie-jp-sammlung";
+const LS_VERKAUFT = "galerie-jp-verkauft";
+
+export function ladeVerkaufte() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_VERKAUFT)) || [];
+  } catch {
+    return [];
+  }
+}
+
+export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
+  const $ = (id) => document.getElementById(id);
+
+  let sammlung = [];
+  try {
+    sammlung = (JSON.parse(localStorage.getItem(LS_SAMMLUNG)) || []).filter(
+      (id) => werkById(id) && !werkById(id).verkauft
+    );
+  } catch {
+    sammlung = [];
+  }
+
+  let offenesWerk = null;
+
+  // ————— Hover-Label —————
+  const hoverLabel = document.createElement("div");
+  hoverLabel.id = "hover-label";
+  document.body.appendChild(hoverLabel);
+
+  function zeigeHover(werkId, x, y) {
+    if (!werkId) {
+      hoverLabel.classList.remove("visible");
+      return;
+    }
+    const werk = werkById(werkId);
+    hoverLabel.innerHTML = `${werk.titel}<span class="hl-price">${
+      werk.verkauft ? "VERKAUFT" : formatPreis(werk.preis)
+    }</span>`;
+    hoverLabel.style.left = `${x}px`;
+    hoverLabel.style.top = `${y}px`;
+    hoverLabel.classList.add("visible");
+  }
+
+  // ————— Saal-Navigation —————
+  const nav = $("room-nav");
+  raeume.forEach((raum, i) => {
+    const b = document.createElement("button");
+    b.textContent = raum.name;
+    b.addEventListener("click", () => steuerungRef().zuRaum(i));
+    nav.appendChild(b);
+  });
+
+  function markiereRaum(index) {
+    [...nav.children].forEach((b, i) => b.classList.toggle("active", i === index));
+  }
+
+  // ————— Werk-Panel —————
+  const panel = $("artwork-panel");
+
+  function oeffneWerk(werkId) {
+    const werk = werkById(werkId);
+    if (!werk) return;
+    offenesWerk = werkId;
+    const raum = raumById(werk.raum);
+    $("aw-room").textContent = `${raum.saal} — ${raum.name}`;
+    $("aw-title").textContent = werk.titel;
+    $("aw-artist").textContent = `${werk.kuenstler}`;
+    $("aw-technique").textContent = werk.technik;
+    $("aw-dimensions").textContent = `${werk.breite_cm} × ${werk.hoehe_cm} cm`;
+    $("aw-year").textContent = werk.jahr;
+    $("aw-desc").textContent = werk.beschreibung;
+    $("aw-price").textContent = formatPreis(werk.preis);
+    aktualisiereKaufButton();
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden", "false");
+  }
+
+  function aktualisiereKaufButton() {
+    if (!offenesWerk) return;
+    const werk = werkById(offenesWerk);
+    const btn = $("aw-add");
+    const kaufzeile = panel.querySelector(".aw-buy");
+    if (werk.verkauft) {
+      kaufzeile.classList.add("hidden");
+      $("aw-sold").classList.remove("hidden");
+    } else {
+      kaufzeile.classList.remove("hidden");
+      $("aw-sold").classList.add("hidden");
+      const drin = sammlung.includes(werk.id);
+      btn.disabled = drin;
+      btn.textContent = drin ? "In Ihrer Sammlung" : "In die Sammlung";
+    }
+  }
+
+  $("aw-add").addEventListener("click", () => {
+    if (!offenesWerk) return;
+    const werk = werkById(offenesWerk);
+    if (werk.verkauft || sammlung.includes(werk.id)) return;
+    sammlung.push(werk.id);
+    speichereSammlung();
+    aktualisiereKaufButton();
+    renderSammlung();
+  });
+
+  function schliesseWerkPanel() {
+    offenesWerk = null;
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+    steuerungRef().fokusVerlassen();
+  }
+
+  // ————— Sammlung (Warenkorb) —————
+  const cartPanel = $("cart-panel");
+
+  function speichereSammlung() {
+    localStorage.setItem(LS_SAMMLUNG, JSON.stringify(sammlung));
+  }
+
+  function summe() {
+    return sammlung.reduce((s, id) => s + werkById(id).preis, 0);
+  }
+
+  function renderSammlung() {
+    $("cart-count").textContent = sammlung.length;
+    const wrap = $("cart-items");
+    wrap.innerHTML = "";
+    if (!sammlung.length) {
+      const leer = document.createElement("p");
+      leer.className = "cart-empty";
+      leer.textContent = "Noch keine Werke ausgewählt. Klicken Sie im Rundgang ein Werk an.";
+      wrap.appendChild(leer);
+    }
+    sammlung.forEach((id) => {
+      const werk = werkById(id);
+      const el = document.createElement("div");
+      el.className = "cart-item";
+      const img = document.createElement("img");
+      img.src = bildThumbnail(werk);
+      img.alt = werk.titel;
+      const mitte = document.createElement("div");
+      mitte.innerHTML = `<div class="cart-item-title">${werk.titel}</div><div class="cart-item-artist">${werk.kuenstler}, Unikat</div>`;
+      const rechts = document.createElement("div");
+      rechts.innerHTML = `<div class="cart-item-price">${formatPreis(werk.preis)}</div>`;
+      const entf = document.createElement("button");
+      entf.className = "cart-item-remove";
+      entf.textContent = "Entfernen";
+      entf.addEventListener("click", () => {
+        sammlung = sammlung.filter((x) => x !== id);
+        speichereSammlung();
+        renderSammlung();
+        aktualisiereKaufButton();
+      });
+      rechts.appendChild(entf);
+      el.append(img, mitte, rechts);
+      wrap.appendChild(el);
+    });
+    $("cart-total").textContent = formatPreis(summe());
+    $("checkout-open").disabled = !sammlung.length;
+  }
+
+  // ————— Kasse —————
+  const checkout = $("checkout");
+
+  $("checkout-open").addEventListener("click", () => {
+    $("checkout-total").textContent = formatPreis(summe());
+    $("checkout-form-view").classList.remove("hidden");
+    $("checkout-success-view").classList.add("hidden");
+    checkout.classList.remove("hidden");
+  });
+
+  $("checkout-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    // >>> Hier wird später Stripe Checkout eingebunden. <<<
+    // Demo: Werke als verkauft markieren und Bestätigung zeigen.
+    const verkaufte = ladeVerkaufte();
+    sammlung.forEach((id) => {
+      werkById(id).verkauft = true;
+      aktualisiereVerkauft(id);
+      if (!verkaufte.includes(id)) verkaufte.push(id);
+    });
+    localStorage.setItem(LS_VERKAUFT, JSON.stringify(verkaufte));
+    sammlung = [];
+    speichereSammlung();
+    renderSammlung();
+    aktualisiereKaufButton();
+    $("checkout-form-view").classList.add("hidden");
+    $("checkout-success-view").classList.remove("hidden");
+  });
+
+  // ————— Öffnen / Schließen —————
+  $("cart-open").addEventListener("click", () => {
+    renderSammlung();
+    cartPanel.classList.add("open");
+    cartPanel.setAttribute("aria-hidden", "false");
+  });
+
+  document.querySelectorAll("[data-close]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const ziel = b.dataset.close;
+      if (ziel === "artwork") schliesseWerkPanel();
+      if (ziel === "cart") {
+        cartPanel.classList.remove("open");
+        cartPanel.setAttribute("aria-hidden", "true");
+      }
+      if (ziel === "checkout") checkout.classList.add("hidden");
+    })
+  );
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code !== "Escape") return;
+    if (!checkout.classList.contains("hidden")) checkout.classList.add("hidden");
+    else if (cartPanel.classList.contains("open")) {
+      cartPanel.classList.remove("open");
+    } else if (panel.classList.contains("open")) schliesseWerkPanel();
+  });
+
+  renderSammlung();
+
+  return {
+    oeffneWerk,
+    schliesseWerkPanel,
+    zeigeHover,
+    markiereRaum,
+  };
+}

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Galerie JP — Virtueller Showroom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Archivo:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- Eintritts-Overlay -->
+  <div id="intro" class="intro">
+    <div class="intro-inner">
+      <p class="eyebrow">Virtueller Showroom</p>
+      <h1 class="intro-title">Galerie&nbsp;JP</h1>
+      <p class="intro-sub">Drei Säle. Ausgewählte Werke. Direkt erwerbbar.</p>
+      <button id="enter" class="btn-brass">Eintreten</button>
+      <div class="intro-hints">
+        <span><b>Ziehen</b> zum Umsehen</span>
+        <span class="hint-sep">·</span>
+        <span><b>W A S D</b> oder <b>Klick auf den Boden</b> zum Gehen</span>
+        <span class="hint-sep">·</span>
+        <span><b>Klick auf ein Werk</b> für Details &amp; Kauf</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Obere Leiste -->
+  <header id="chrome-top" class="chrome chrome-top hidden">
+    <div class="wordmark">Galerie&nbsp;JP</div>
+    <button id="cart-open" class="cart-btn" aria-label="Warenkorb öffnen">
+      Sammlung&nbsp;<span id="cart-count" class="cart-count">0</span>
+    </button>
+  </header>
+
+  <!-- Saal-Navigation -->
+  <nav id="room-nav" class="chrome room-nav hidden" aria-label="Säle"></nav>
+
+  <!-- Werk-Detailpanel (Saaltext) -->
+  <aside id="artwork-panel" class="panel artwork-panel" aria-hidden="true">
+    <button class="panel-close" data-close="artwork" aria-label="Schließen">×</button>
+    <p class="eyebrow" id="aw-room">Saal I — Moderne</p>
+    <h2 class="aw-title" id="aw-title">Titel</h2>
+    <p class="aw-artist" id="aw-artist">Künstler</p>
+    <div class="rule"></div>
+    <dl class="aw-meta">
+      <div><dt>Technik</dt><dd id="aw-technique"></dd></div>
+      <div><dt>Maße</dt><dd id="aw-dimensions"></dd></div>
+      <div><dt>Jahr</dt><dd id="aw-year"></dd></div>
+    </dl>
+    <p class="aw-desc" id="aw-desc"></p>
+    <div class="aw-buy">
+      <span class="aw-price" id="aw-price"></span>
+      <button id="aw-add" class="btn-brass">In die Sammlung</button>
+    </div>
+    <p class="aw-sold hidden" id="aw-sold"><span class="dot"></span>Verkauft</p>
+  </aside>
+
+  <!-- Warenkorb -->
+  <aside id="cart-panel" class="panel cart-panel" aria-hidden="true">
+    <button class="panel-close" data-close="cart" aria-label="Schließen">×</button>
+    <p class="eyebrow">Ihre Sammlung</p>
+    <div id="cart-items" class="cart-items"></div>
+    <div class="rule"></div>
+    <div class="cart-total-row">
+      <span>Gesamt</span>
+      <span id="cart-total">0 €</span>
+    </div>
+    <button id="checkout-open" class="btn-brass" disabled>Erwerben</button>
+    <p class="cart-note">Preise inkl. MwSt., zzgl. versichertem Versand.</p>
+  </aside>
+
+  <!-- Checkout-Modal -->
+  <div id="checkout" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button class="panel-close" data-close="checkout" aria-label="Schließen">×</button>
+      <div id="checkout-form-view">
+        <p class="eyebrow">Erwerb</p>
+        <h2 class="modal-title">Ihre Angaben</h2>
+        <form id="checkout-form">
+          <label>Name<input type="text" name="name" required autocomplete="name" /></label>
+          <label>E-Mail<input type="email" name="email" required autocomplete="email" /></label>
+          <label>Telefon (optional)<input type="tel" name="phone" autocomplete="tel" /></label>
+          <div class="rule"></div>
+          <div class="cart-total-row">
+            <span>Gesamt</span><span id="checkout-total">0 €</span>
+          </div>
+          <button type="submit" class="btn-brass">Verbindlich reservieren</button>
+          <p class="cart-note">Demo-Modus: Die Online-Zahlung (Stripe) wird nach Freigabe durch die Galerie aktiviert. Bis dahin reservieren wir die Werke und melden uns persönlich.</p>
+        </form>
+      </div>
+      <div id="checkout-success-view" class="hidden">
+        <p class="eyebrow">Bestätigung</p>
+        <h2 class="modal-title">Reservierung eingegangen</h2>
+        <p class="aw-desc">Vielen Dank. Die Galerie meldet sich innerhalb eines Werktags persönlich bei Ihnen, um Zahlung und Übergabe zu besprechen. Die Werke sind für Sie zurückgelegt.</p>
+        <button class="btn-brass" data-close="checkout">Zurück in die Galerie</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

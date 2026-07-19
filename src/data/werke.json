@@ -1,0 +1,196 @@
+{
+  "galerie": {
+    "name": "Galerie JP",
+    "waehrung": "EUR"
+  },
+  "raeume": [
+    {
+      "id": "moderne",
+      "name": "Moderne",
+      "saal": "Saal I",
+      "beschreibung": "Farbfelder und stille Kompositionen der Gegenwart."
+    },
+    {
+      "id": "abstraktion",
+      "name": "Abstraktion",
+      "saal": "Saal II",
+      "beschreibung": "Gestische Malerei — Bewegung, Linie, Energie."
+    },
+    {
+      "id": "fotografie",
+      "name": "Fotografie",
+      "saal": "Saal III",
+      "beschreibung": "Monochrome Arbeiten zwischen Licht und Schatten."
+    }
+  ],
+  "werke": [
+    {
+      "id": "w-001",
+      "raum": "moderne",
+      "titel": "Stille Fläche II",
+      "kuenstler": "Mara Weidenfeld",
+      "jahr": 2024,
+      "technik": "Öl auf Leinwand",
+      "breite_cm": 120,
+      "hoehe_cm": 150,
+      "preis": 8400,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Zwei schwebende Farbfelder in gedämpftem Ocker und Nachtblau — ein Werk über das Atmen zwischen den Flächen."
+    },
+    {
+      "id": "w-002",
+      "raum": "moderne",
+      "titel": "Horizontlinie, früh",
+      "kuenstler": "Mara Weidenfeld",
+      "jahr": 2023,
+      "technik": "Öl auf Leinwand",
+      "breite_cm": 160,
+      "hoehe_cm": 110,
+      "preis": 9800,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Ein breiter, ruhiger Horizont in drei Tonstufen. Entstanden in der Serie „Küstenlicht“."
+    },
+    {
+      "id": "w-003",
+      "raum": "moderne",
+      "titel": "Ockerfeld",
+      "kuenstler": "Jonas Brandt",
+      "jahr": 2025,
+      "technik": "Acryl und Pigment auf Leinwand",
+      "breite_cm": 100,
+      "hoehe_cm": 100,
+      "preis": 6200,
+      "bild": null,
+      "verkauft": true,
+      "beschreibung": "Monochromes Pigmentfeld mit fein gebrochener Oberfläche."
+    },
+    {
+      "id": "w-004",
+      "raum": "moderne",
+      "titel": "Zwei Räume",
+      "kuenstler": "Jonas Brandt",
+      "jahr": 2024,
+      "technik": "Öl auf Leinwand",
+      "breite_cm": 90,
+      "hoehe_cm": 130,
+      "preis": 7100,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Architektonische Farbteilung — innen und außen zugleich."
+    },
+    {
+      "id": "w-005",
+      "raum": "abstraktion",
+      "titel": "Aufwind",
+      "kuenstler": "Selin Okur",
+      "jahr": 2025,
+      "technik": "Mischtechnik auf Leinwand",
+      "breite_cm": 140,
+      "hoehe_cm": 180,
+      "preis": 12400,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Weit ausholende Gesten in Umbra und Zinnober — das zentrale Werk der aktuellen Ausstellung."
+    },
+    {
+      "id": "w-006",
+      "raum": "abstraktion",
+      "titel": "Notat 14",
+      "kuenstler": "Selin Okur",
+      "jahr": 2024,
+      "technik": "Tusche und Acryl auf Leinwand",
+      "breite_cm": 110,
+      "hoehe_cm": 90,
+      "preis": 5400,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Kalligrafische Verdichtung, in einer Sitzung entstanden."
+    },
+    {
+      "id": "w-007",
+      "raum": "abstraktion",
+      "titel": "Schwarm",
+      "kuenstler": "Anton Hilbert",
+      "jahr": 2023,
+      "technik": "Acryl auf Leinwand",
+      "breite_cm": 130,
+      "hoehe_cm": 130,
+      "preis": 8900,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Hunderte kurzer Setzungen, die sich zu einer Bewegung ordnen."
+    },
+    {
+      "id": "w-008",
+      "raum": "abstraktion",
+      "titel": "Bruchkante",
+      "kuenstler": "Anton Hilbert",
+      "jahr": 2025,
+      "technik": "Öl und Kohle auf Leinwand",
+      "breite_cm": 95,
+      "hoehe_cm": 140,
+      "preis": 7600,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Eine einzige dunkle Diagonale teilt das Bildfeld."
+    },
+    {
+      "id": "w-009",
+      "raum": "fotografie",
+      "titel": "Nebelkamm I",
+      "kuenstler": "Ruth Ellmann",
+      "jahr": 2022,
+      "technik": "Silbergelatine-Abzug, gerahmt",
+      "breite_cm": 110,
+      "hoehe_cm": 80,
+      "preis": 3800,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Bergrücken im Morgennebel, Edition 1/1 — als Unikat abgezogen."
+    },
+    {
+      "id": "w-010",
+      "raum": "fotografie",
+      "titel": "Nebelkamm II",
+      "kuenstler": "Ruth Ellmann",
+      "jahr": 2022,
+      "technik": "Silbergelatine-Abzug, gerahmt",
+      "breite_cm": 110,
+      "hoehe_cm": 80,
+      "preis": 3800,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Gegenstück zu Nebelkamm I, aufgenommen eine Stunde später."
+    },
+    {
+      "id": "w-011",
+      "raum": "fotografie",
+      "titel": "Fassade, Nacht",
+      "kuenstler": "Ruth Ellmann",
+      "jahr": 2024,
+      "technik": "Pigmentdruck auf Baryt, gerahmt",
+      "breite_cm": 90,
+      "hoehe_cm": 120,
+      "preis": 4600,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Ein einzelnes erleuchtetes Fenster in dunkler Rasterfassade."
+    },
+    {
+      "id": "w-012",
+      "raum": "fotografie",
+      "titel": "Gezeiten",
+      "kuenstler": "Paul Andersson",
+      "jahr": 2023,
+      "technik": "Langzeitbelichtung, Pigmentdruck, gerahmt",
+      "breite_cm": 150,
+      "hoehe_cm": 100,
+      "preis": 5200,
+      "bild": null,
+      "verkauft": false,
+      "beschreibung": "Zwanzig Minuten Meer, zu einer einzigen weichen Fläche verdichtet."
+    }
+  ]
+}

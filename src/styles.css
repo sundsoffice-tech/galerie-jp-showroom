@@ -1,0 +1,456 @@
+/* ————— Galerie JP — Overlay-UI —————
+   Ästhetik: Museums-Saaltext auf Rauchglas.
+   Farben: Nachtglas, Elfenbein, Messing. */
+
+:root {
+  --glass: rgba(17, 15, 12, 0.86);
+  --glass-soft: rgba(17, 15, 12, 0.6);
+  --ivory: #ede7dc;
+  --ivory-dim: rgba(237, 231, 220, 0.55);
+  --brass: #c2a36b;
+  --brass-bright: #d8bc85;
+  --line: rgba(237, 231, 220, 0.16);
+  --sold: #9e3b32;
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --sans: "Archivo", system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #0c0b09;
+  color: var(--ivory);
+  font-family: var(--sans);
+  font-weight: 300;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+#scene.walk { cursor: grab; }
+#scene.walk:active { cursor: grabbing; }
+#scene.hover-art { cursor: pointer; }
+
+#vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(5, 4, 3, 0.55) 100%);
+}
+
+.hidden { display: none !important; }
+
+/* ————— Typo-Bausteine ————— */
+
+.eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.rule {
+  height: 1px;
+  background: var(--line);
+  margin: 1.1rem 0;
+}
+
+.btn-brass {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #14110c;
+  background: linear-gradient(120deg, var(--brass), var(--brass-bright));
+  border: none;
+  padding: 0.9rem 2.2rem;
+  cursor: pointer;
+  transition: filter 0.25s ease, transform 0.25s ease;
+}
+.btn-brass:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-brass:active:not(:disabled) { transform: translateY(1px); }
+.btn-brass:disabled { opacity: 0.35; cursor: default; }
+.btn-brass:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--brass-bright);
+  outline-offset: 3px;
+}
+
+/* ————— Eintritt ————— */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 40%, #191510 0%, #0c0b09 70%);
+  transition: opacity 0.9s ease;
+}
+.intro.leaving { opacity: 0; pointer-events: none; }
+
+.intro-inner { text-align: center; padding: 2rem; max-width: 40rem; }
+
+.intro-title {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(3.2rem, 9vw, 6rem);
+  line-height: 1.05;
+  margin: 1.2rem 0 0.6rem;
+  letter-spacing: 0.04em;
+}
+
+.intro-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ivory-dim);
+  margin-bottom: 2.6rem;
+}
+
+.intro-hints {
+  margin-top: 2.4rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--ivory-dim);
+}
+.intro-hints b { color: var(--ivory); font-weight: 500; }
+.hint-sep { margin: 0 0.7rem; color: var(--brass); }
+
+/* ————— Chrome (Leisten) ————— */
+
+.chrome {
+  position: fixed;
+  z-index: 20;
+  transition: opacity 0.6s ease;
+}
+
+.chrome-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.6rem;
+  background: linear-gradient(to bottom, rgba(8, 7, 5, 0.55), transparent);
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.cart-btn {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ivory);
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: border-color 0.25s ease;
+}
+.cart-btn:hover { border-color: var(--brass); }
+
+.cart-count {
+  display: inline-block;
+  min-width: 1.3em;
+  color: var(--brass-bright);
+}
+
+/* ————— Saal-Navigation ————— */
+
+.room-nav {
+  bottom: 1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.45rem;
+  background: var(--glass-soft);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+}
+
+.room-nav button {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  background: transparent;
+  border: none;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: color 0.25s ease, background 0.25s ease;
+}
+.room-nav button:hover { color: var(--ivory); }
+.room-nav button.active {
+  color: var(--brass-bright);
+  background: rgba(194, 163, 107, 0.08);
+}
+
+/* ————— Panels (Saaltext & Sammlung) ————— */
+
+.panel {
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(26rem, 92vw);
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  border-left: 1px solid var(--line);
+  padding: 4.2rem 2.2rem 2.2rem;
+  transform: translateX(102%);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow-y: auto;
+}
+.panel.open { transform: translateX(0); }
+
+.panel-close {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.3rem;
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--ivory-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.panel-close:hover { color: var(--ivory); }
+
+.aw-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.15;
+  margin-top: 0.9rem;
+}
+
+.aw-artist {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ivory-dim);
+  margin-top: 0.3rem;
+}
+
+.aw-meta { display: grid; gap: 0.45rem; }
+.aw-meta div { display: flex; justify-content: space-between; gap: 1rem; }
+.aw-meta dt {
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  padding-top: 0.15em;
+}
+.aw-meta dd { font-size: 0.85rem; text-align: right; }
+
+.aw-desc {
+  margin-top: 1.2rem;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  color: var(--ivory-dim);
+}
+
+.aw-buy {
+  margin-top: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.aw-price {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+}
+
+.aw-sold {
+  margin-top: 1.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.aw-sold .dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--sold);
+}
+
+/* ————— Warenkorb ————— */
+
+.cart-items { margin-top: 1.4rem; display: grid; gap: 1rem; }
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr auto;
+  gap: 0.9rem;
+  align-items: center;
+}
+.cart-item img {
+  width: 3.2rem;
+  height: 3.2rem;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+.cart-item-title { font-family: var(--serif); font-size: 1rem; line-height: 1.2; }
+.cart-item-artist { font-size: 0.72rem; color: var(--ivory-dim); margin-top: 0.15rem; }
+.cart-item-price { font-size: 0.85rem; }
+.cart-item-remove {
+  grid-column: 3;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  padding: 0;
+  margin-top: 0.2rem;
+}
+.cart-item-remove:hover { color: var(--sold); }
+
+.cart-empty {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ivory-dim);
+  margin-top: 0.6rem;
+}
+
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  margin-bottom: 1.4rem;
+}
+
+.cart-note {
+  margin-top: 1rem;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  color: var(--ivory-dim);
+}
+
+.cart-panel .btn-brass { width: 100%; }
+
+/* ————— Checkout-Modal ————— */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 4, 3, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  position: relative;
+  width: min(26rem, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  padding: 2.4rem 2.2rem;
+}
+
+.modal-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.7rem;
+  margin: 0.7rem 0 1.4rem;
+}
+
+#checkout-form { display: grid; gap: 1rem; }
+#checkout-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+}
+#checkout-form input {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--ivory);
+  background: rgba(237, 231, 220, 0.05);
+  border: 1px solid var(--line);
+  padding: 0.7rem 0.9rem;
+}
+#checkout-form input:focus { border-color: var(--brass); outline: none; }
+
+#checkout-success-view .btn-brass { margin-top: 1.6rem; }
+
+/* ————— Werk-Hinweis (Hover-Label) ————— */
+
+#hover-label {
+  position: fixed;
+  z-index: 15;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 14px));
+  background: var(--glass);
+  border: 1px solid var(--line);
+  padding: 0.5rem 0.9rem;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+#hover-label.visible { opacity: 1; }
+#hover-label .hl-price {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--brass-bright);
+  margin-left: 0.7rem;
+}
+
+/* ————— Mobil ————— */
+
+@media (max-width: 640px) {
+  .panel { padding: 3.6rem 1.4rem 1.4rem; }
+  .chrome-top { padding: 0.9rem 1rem; }
+  .room-nav button { padding: 0.5rem 0.6rem; letter-spacing: 0.12em; }
+  .intro-hints .hint-sep { display: block; visibility: hidden; height: 0.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { transition: none; }
+  .intro { transition: none; }
+}
