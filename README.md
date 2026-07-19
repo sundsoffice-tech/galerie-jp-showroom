@@ -99,7 +99,9 @@ Mobil-Viewport, inklusive Konsolenfehler:
 ```bash
 npm run dev          # in einem Terminal
 npm test             # in einem zweiten (Port ggf. in package.json anpassen)
-npm run test:live    # dasselbe gegen die veröffentlichte Seite
+npm run preview &    # Produktions-Build servieren …
+npm run test:offline # … und den Offline-Start (Service Worker) prüfen
+npm run test:live    # alles gegen die veröffentlichte Seite (inkl. offline)
 ```
 
 Der Test braucht einmalig `npx playwright install chromium`. Er hat u. a.

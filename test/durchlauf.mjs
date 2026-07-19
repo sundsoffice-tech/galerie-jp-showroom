@@ -203,6 +203,24 @@ if (MOBIL) {
   });
 }
 
+// 7b. Privatführung: startet, zeigt ein Werk, übergibt bei Eingriff
+await pruefe("Privatführung startet und übergibt bei Eingriff", async () => {
+  await seite.click("#tour-open");
+  await seite.waitForTimeout(2600); // Fahrt zum ersten Werk
+  const laeuft = await seite.evaluate(() => ({
+    aktiv: window.__tour.istAktiv(),
+    panel: document.getElementById("artwork-panel").classList.contains("open"),
+  }));
+  if (!laeuft.aktiv) throw new Error("Tour lief nicht an");
+  if (!laeuft.panel) throw new Error("Tour öffnete kein Werk");
+  await seite.keyboard.press("Escape"); // Besucher greift ein
+  await seite.waitForTimeout(400);
+  const danach = await seite.evaluate(() => window.__tour.istAktiv());
+  if (danach) throw new Error("Tour lief nach Eingriff weiter");
+  await seite.waitForTimeout(300);
+  return "Tour lief, Eingriff übernahm";
+});
+
 // 8. System-Zurück (Android-Geste): schließt das Overlay, verlässt nie die Seite
 await pruefe("System-Zurück schließt das Overlay", async () => {
   await seite.click("#catalog-open");

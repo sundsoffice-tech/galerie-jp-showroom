@@ -19,6 +19,7 @@ import { erstelleJoystick } from "./joystick.js";
 import { erstelleSteuerung } from "./steuerung.js";
 import { erstelleUI, ladeVerkaufte } from "./ui.js";
 import { erstelleIntro } from "./intro.js";
+import { erstelleTour } from "./tour.js";
 import * as klang from "./klang.js";
 
 // ————— Live-Katalog —————
@@ -189,6 +190,25 @@ if (IM_3D) {
     ui,
   });
 
+  // ————— Privatführung —————
+  const tour = erstelleTour({ steuerung, kunstwerke: szene.kunstwerke, ui });
+  document.getElementById("tour-open").addEventListener("click", () => tour.starte());
+  // Jeder echte Eingriff des Besuchers übernimmt sofort die Kontrolle
+  window.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.target.closest?.("#tour-open")) return; // der Start-Klick selbst nicht
+      tour.stoppe();
+    },
+    { capture: true }
+  );
+  window.addEventListener("keydown", (e) => {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+    tour.stoppe();
+  });
+  window.__tour = tour;
+
   enterBtn.addEventListener("click", () => {
     intro.eintreten();
     // Deep-Link (#w-005): nach dem Eintritt direkt vor das Werk fahren
@@ -224,6 +244,7 @@ if (IM_3D) {
         joystickGezeigt = true;
         joystick.zeige(true);
       }
+      tour.update();
       steuerung.update(dt);
       // FOV weich nachführen
       const fovZiel = steuerung.fovZiel();
@@ -329,6 +350,26 @@ if (IM_3D) {
       ui.oeffneWerk(zielId);
     } else {
       document.getElementById("catalog-open").click();
+    }
+  });
+}
+
+// Offline-Fähigkeit der installierten App (HTML bleibt Netz-zuerst,
+// Deploys kleben also nie im Cache fest)
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("./sw.js");
+      const reg = await navigator.serviceWorker.ready;
+      // Erstbesuch offline-fähig machen: alles bereits Geladene nachcachen
+      const urls = performance
+        .getEntriesByType("resource")
+        .map((r) => r.name)
+        .filter((u) => u.startsWith(location.origin));
+      urls.push(location.href);
+      reg.active?.postMessage({ vorwaermen: urls });
+    } catch {
+      /* ohne Offline-Cache läuft die Galerie normal weiter */
     }
   });
 }

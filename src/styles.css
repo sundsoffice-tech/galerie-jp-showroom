@@ -835,7 +835,9 @@ html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
 html.modus-2d #scene { display: none; }
 html.modus-2d #room-nav,
 html.modus-2d #mute,
+html.modus-2d #tour-open,
 html.modus-2d #joystick { display: none !important; }
+.nur-schmal { display: none; }
 html.modus-2d body {
   background:
     radial-gradient(ellipse 120% 80% at 50% -10%, rgba(194, 163, 107, 0.14), transparent 55%),
@@ -949,6 +951,7 @@ html.modus-2d .panel { width: min(30rem, 96vw); }
   }
   html.touch .mute-btn { padding: 0.55rem 0.5rem; }
   html.touch .nur-breit { display: none; } /* „Alle Werke" -> „Werke" */
+  html.touch .nur-schmal { display: inline; }
 
   /* Saal-Navigation wird Chip-Leiste OBEN (unten wohnen Joystick + Sheets) */
   html.touch .room-nav {

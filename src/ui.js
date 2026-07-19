@@ -724,6 +724,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   return {
     oeffneWerk,
     schliesseWerkPanel,
+    melde,
     zeigeHover,
     markiereRaum,
     blendeZuSaal,

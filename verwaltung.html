@@ -773,6 +773,25 @@
           }
           const aktionen = document.createElement("div");
           aktionen.className = "werk-aktionen";
+          // Reihenfolge = Hängung im Showroom: Pfeile kuratieren die Wände.
+          // Bei aktivem Filter/Suchwort wäre Verschieben irreführend -> aus.
+          const ungefiltert = !filter.value && !suchwort;
+          for (const [pfeil, richtung] of [["↑", -1], ["↓", 1]]) {
+            const knopf = document.createElement("button");
+            knopf.textContent = pfeil;
+            knopf.title = ungefiltert
+              ? "Reihenfolge ändern (bestimmt die Hängung)"
+              : "Zum Verschieben Filter und Suche leeren";
+            knopf.disabled = !ungefiltert;
+            knopf.addEventListener("click", () => {
+              const ziel = idx + richtung;
+              if (ziel < 0 || ziel >= daten.werke.length) return;
+              [daten.werke[idx], daten.werke[ziel]] = [daten.werke[ziel], daten.werke[idx]];
+              markiereGeaendert();
+              renderWerke();
+            });
+            aktionen.appendChild(knopf);
+          }
           const bearb = document.createElement("button");
           bearb.textContent = "Bearbeiten";
           bearb.addEventListener("click", () => oeffneEditor(idx));

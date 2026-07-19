@@ -4,6 +4,7 @@
 // automatisch gehängt — neue Werke in werke.json => neue Hängung, ohne Code.
 
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { raeume, werkeImRaum, bildQuelle, platzhalterCanvasFuer, galerie } from "./katalog.js";
 import { KONFIG, TIER } from "./konfig.js";
 import { IST_TOUCH, IST_SCHWACH, REDUZIERTE_BEWEGUNG } from "./geraet.js";
@@ -173,20 +174,25 @@ export function erstelleSzene(canvas) {
 
   const vouteMat = new THREE.MeshBasicMaterial({ color: 0x392c19 });
 
+  // Sockel, Schattenfugen und Lichtvouten laufen an jeder Wand — statt
+  // ~100 Einzel-Meshes werden sie gesammelt und zu DREI Meshes verschmolzen
+  // (ein Draw-Call pro Material; zählt auf schwachen Mobil-GPUs).
+  const sockelGeos = [];
+  const fugeGeos = [];
+  const vouteGeos = [];
+
+  function leiste(liste, laenge, hoehe, tiefe, x, y, z, rotY) {
+    const g = new THREE.BoxGeometry(laenge, hoehe, tiefe);
+    g.rotateY(rotY);
+    g.translate(x, y, z);
+    liste.push(g);
+  }
+
   function sockelUndFuge(laenge, x, z, rotY) {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(laenge, 0.11, 0.035), sockelMat);
-    s.rotation.y = rotY;
-    s.position.set(x, 0.055, z);
-    scene.add(s);
-    const f = new THREE.Mesh(new THREE.BoxGeometry(laenge, 0.02, 0.037), fugeMat);
-    f.rotation.y = rotY;
-    f.position.set(x, 0.12, z);
-    scene.add(f);
+    leiste(sockelGeos, laenge, 0.11, 0.035, x, 0.055, z, rotY);
+    leiste(fugeGeos, laenge, 0.02, 0.037, x, 0.12, z, rotY);
     // Lichtvoute: ein warmer Saum definiert die sonst schwarze Deckenkante
-    const v = new THREE.Mesh(new THREE.BoxGeometry(laenge, 0.035, 0.03), vouteMat);
-    v.rotation.y = rotY;
-    v.position.set(x, RAUM_H - 0.06, z);
-    scene.add(v);
+    leiste(vouteGeos, laenge, 0.035, 0.03, x, RAUM_H - 0.06, z, rotY);
   }
 
   // Längswände Nord/Süd — ein Segment pro Saal (eigene Saalfarbe)
@@ -293,6 +299,15 @@ export function erstelleSzene(canvas) {
   }
   // Saaltafel des ersten Saals nahe dem Startpunkt (Südwand, links)
   erstelleSaaltafel(scene, raeume[0], raumZentrumX(0) - RAUM_B / 2 + 1.05, RAUM_T / 2 - 0.012, Math.PI);
+
+  // Alle gesammelten Leisten in je einem Mesh (drei Draw-Calls statt ~100)
+  for (const [geos, material] of [
+    [sockelGeos, sockelMat],
+    [fugeGeos, fugeMat],
+    [vouteGeos, vouteMat],
+  ]) {
+    if (geos.length) scene.add(new THREE.Mesh(mergeGeometries(geos), material));
+  }
 
   // ————— Möblierung + Verbotszonen —————
   const verboten = [];
