@@ -15,6 +15,31 @@ import { erstelleUI, ladeVerkaufte } from "./ui.js";
 import { erstelleIntro } from "./intro.js";
 import * as klang from "./klang.js";
 
+// ————— Start-Absicherung —————
+// Scheitert der Aufbau (kein WebGL, Skriptfehler), bekäme der Besucher sonst
+// ein totes „Eintreten" ohne jede Rückmeldung. Stattdessen: klare Meldung.
+let startGeglueckt = false;
+
+function meldeStartfehler(details) {
+  if (startGeglueckt) return;
+  const inner = document.querySelector(".intro-inner");
+  if (!inner || inner.dataset.fehler) return;
+  inner.dataset.fehler = "1";
+  const enter = document.getElementById("enter");
+  if (enter) enter.remove();
+  const hinweis = document.createElement("p");
+  hinweis.className = "intro-fehler";
+  hinweis.textContent =
+    "Der 3D-Rundgang kann in diesem Browser nicht gestartet werden. " +
+    "Bitte laden Sie die Seite neu oder öffnen Sie sie in einem aktuellen " +
+    "Browser mit aktivierter 3D-Darstellung (WebGL).";
+  inner.appendChild(hinweis);
+  console.error("Start fehlgeschlagen:", details);
+}
+
+window.addEventListener("error", (e) => meldeStartfehler(e.message));
+window.addEventListener("unhandledrejection", (e) => meldeStartfehler(e.reason));
+
 // Galeriename aus den Katalogdaten in Titel, Wortmarke und Intro
 document.title = `${galerie.name} — Virtueller Showroom`;
 document.querySelector(".wordmark").textContent = galerie.name;
@@ -49,6 +74,21 @@ try {
 }
 
 const canvas = document.getElementById("scene");
+
+// WebGL vorab prüfen — sonst stirbt der Aufbau erst tief in Three.js
+const webglOk = (() => {
+  try {
+    const p = document.createElement("canvas");
+    return !!(p.getContext("webgl2") || p.getContext("webgl"));
+  } catch {
+    return false;
+  }
+})();
+if (!webglOk) {
+  meldeStartfehler("WebGL steht in diesem Browser nicht zur Verfügung.");
+  throw new Error("WebGL nicht verfügbar");
+}
+
 const szene = erstelleSzene(canvas);
 
 // ————— Postprocessing (nur Tier A) —————
@@ -195,6 +235,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 loop();
+startGeglueckt = true; // ab hier sind Fehler nicht mehr „Start fehlgeschlagen"
 
 // Debug-Zugriff für Entwicklung (window.__galerie)
 window.__galerie = { szene, steuerung: () => steuerung, qualitaet: () => qualitaet };

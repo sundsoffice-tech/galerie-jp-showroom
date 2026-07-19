@@ -127,6 +127,16 @@ textarea:focus-visible {
   margin-bottom: 2.6rem;
 }
 
+.intro-fehler {
+  max-width: 28rem;
+  margin: 0 auto;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--ivory-dim);
+  border: 1px solid rgba(158, 59, 50, 0.5);
+  padding: 1rem 1.2rem;
+}
+
 .intro-hints {
   margin-top: 2.4rem;
   font-size: 0.72rem;
@@ -350,14 +360,17 @@ html.touch .hint-touch { display: inline; }
 .panel {
   position: fixed;
   z-index: 30;
-  top: 0;
+  /* beginnt UNTER der Kopfleiste, damit Sammlung, Katalog und Ton
+     auch bei geöffnetem Werk erreichbar bleiben */
+  top: 3.6rem;
   right: 0;
-  height: 100%;
+  height: calc(100% - 3.6rem);
   width: min(26rem, 92vw);
   background: var(--glass);
   backdrop-filter: blur(14px);
   border-left: 1px solid var(--line);
-  padding: 4.2rem 2.2rem 2.2rem;
+  border-top: 1px solid var(--line);
+  padding: 3rem 2.2rem 2.2rem;
   transform: translateX(102%);
   visibility: hidden; /* geschlossene Panels aus der Tab-Reihenfolge nehmen */
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s 0.55s;
@@ -857,8 +870,22 @@ html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
       calc(0.9rem + env(safe-area-inset-right)) 0.55rem
       calc(0.9rem + env(safe-area-inset-left));
   }
-  html.touch .wordmark { font-size: 1.05rem; letter-spacing: 0.1em; }
-  html.touch .cart-btn { min-height: 44px; padding: 0.55rem 0.9rem; letter-spacing: 0.16em; }
+  /* Kopfleiste muss auf 375 px umbruchfrei in eine Zeile passen */
+  html.touch .wordmark {
+    font-size: 0.92rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  html.touch .chrome-top-rechts { gap: 0.35rem; }
+  html.touch .cart-btn {
+    min-height: 44px;
+    padding: 0.55rem 0.6rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  html.touch .mute-btn { padding: 0.55rem 0.5rem; }
+  html.touch .nur-breit { display: none; } /* „Alle Werke" -> „Werke" */
 
   /* Saal-Navigation wird Chip-Leiste OBEN (unten wohnen Joystick + Sheets) */
   html.touch .room-nav {
@@ -882,7 +909,10 @@ html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
   html.touch .room-nav button {
     flex: 0 0 auto;
     min-height: 44px;
-    padding: 0.6rem 1.05rem;
+    /* kompakt genug, dass drei Säle auf 375-px-Geräten ohne Scrollen passen */
+    padding: 0.6rem 0.7rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--glass-soft);
@@ -906,6 +936,14 @@ html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
 
   .aw-title { font-size: 1.6rem; }
   .intro-hints .hint-sep { display: none; }
+
+  /* Im Sheet zählt jede Zeile: Preis und Kauf-Button müssen schon im
+     Peek-Zustand sichtbar sein. Das Werk selbst steht in 3D dahinter
+     (der ViewOffset hält es frei) — die Abbildung ist hier redundant. */
+  html.touch #aw-bild { display: none; }
+  html.touch .aw-meta { gap: 0.3rem; }
+  html.touch .aw-desc { margin-top: 0.9rem; }
+  html.touch .aw-unikat { margin-top: 1rem; }
 }
 
 /* ————— Touch-Ziele & Hover-Neutralisierung (alle Touch-Geräte) —————
@@ -953,12 +991,12 @@ html.touch #hover-label .hl-tipp {
 
 @media (max-height: 480px) and (orientation: landscape) {
   html.touch .panel {
-    top: 0;
+    top: 2.9rem; /* Kopfleiste freihalten */
     bottom: 0;
     left: auto;
     right: 0;
     width: min(22rem, 58vw);
-    height: 100%;
+    height: calc(100% - 2.9rem);
     max-height: none;
     border-radius: 0;
     border-top: none;

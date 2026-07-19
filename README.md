@@ -81,6 +81,22 @@ Mobile-Parameter. Galeriename/E-Mail/Währung stehen in `werke.json`.
 3. **Stufe C (bei Bedarf):** Serverless-Checkout + Webhook, siehe
    Netlify-Functions-Pfad — erst sinnvoll ab vielen Online-Verkäufen.
 
+## Testen
+
+Ein automatischer Durchlauf prüft den kompletten Kaufweg (Eintreten → Katalog →
+Werk → Sammlung → Kasse → Reservierung → Saalwechsel) auf Desktop **und** im
+Mobil-Viewport, inklusive Konsolenfehler:
+
+```bash
+npm run dev          # in einem Terminal
+npm test             # in einem zweiten (Port ggf. in package.json anpassen)
+npm run test:live    # dasselbe gegen die veröffentlichte Seite
+```
+
+Der Test braucht einmalig `npx playwright install chromium`. Er hat u. a.
+aufgedeckt, dass die Blätter-Pfeile den „Sammlung"-Knopf überdeckten und der
+Warenkorb nach einer Reservierung offen blieb — lohnt sich also vor jedem Deploy.
+
 ## Technik
 
 - Vite + Three.js, Vanilla JS, keine weiteren Laufzeit-Abhängigkeiten

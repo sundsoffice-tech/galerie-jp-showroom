@@ -29,7 +29,13 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
 
   function eintreten() {
     if (modus !== "drift") return;
-    klang.starte();
+    // Ton darf den Eintritt niemals blockieren (blockierter AudioContext,
+    // fehlendes StereoPanner o. ä.) — der Rundgang läuft dann eben stumm.
+    try {
+      klang.starte();
+    } catch (fehler) {
+      console.warn("Ton konnte nicht gestartet werden:", fehler);
+    }
     modus = "eintritt";
     eintrittStart = performance.now();
     planIndex = 0;

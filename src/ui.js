@@ -161,7 +161,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   // ————— Werk-Panel —————
   const panel = $("artwork-panel");
   const werkSheet = machBottomSheet(panel, {
-    peek: 0.46,
+    // hoch genug, dass Titel, Daten, Preis und Kauf-Button ohne Ziehen sichtbar sind
+    peek: 0.58,
     onClose: () => schliesseWerkPanel(),
   });
 
@@ -535,6 +536,9 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     aktualisiereKaufButton();
     aktualisiereNavZaehler();
     form.reset();
+    // Der Warenkorb dahinter ist jetzt leer — offen bliebe er mit seiner
+    // Abdunklung über der Galerie liegen und blockierte die Navigation.
+    schliesseCart();
     $("checkout-form-view").classList.add("hidden");
     $("checkout-success-view").classList.remove("hidden");
     melde("Reservierung eingegangen. Die Galerie meldet sich persönlich.");

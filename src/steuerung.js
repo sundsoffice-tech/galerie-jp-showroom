@@ -271,7 +271,8 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     const w = window.innerWidth;
     const h = window.innerHeight;
     if (sheetOffsetAktiv && istSheetLayout()) {
-      camera.setViewOffset(w, h, 0, h * 0.19, w, h);
+      // Werk in die freie Zone über dem Peek-Sheet (58 %) heben
+      camera.setViewOffset(w, h, 0, h * 0.24, w, h);
     } else {
       camera.clearViewOffset();
     }
