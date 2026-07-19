@@ -1,19 +1,22 @@
 // Steuerung — Bewegungsgefühl „schweres Stativ, nicht Ego-Shooter":
 // Beschleunigen/Ausrollen statt An/Aus, Blick-Trägheit mit Nachschwingen,
 // dezenter Head-Bob mit Schritt-Triggern, Bogen-Kamerafahrt zum Werk.
-// Touch: linke Bildschirmhälfte = Geh-Stick, rechte = Umsehen, Tipp = Klick.
+// Touch: Ziehen = Umsehen (eine Pointer-ID), Tippen = Gehen/Werk,
+// Joystick (eigenes DOM-Element) = flanierendes Gehen, Blick-Label als Hover-Ersatz.
 
 import * as THREE from "three";
 import { RAUM_T, raumZentrumX } from "./szene.js";
 import { KONFIG, REDUZIERTE_BEWEGUNG } from "./konfig.js";
+import { IST_TOUCH, istSheetLayout } from "./geraet.js";
 import { raeume } from "./katalog.js";
 
 const B = KONFIG.besucher;
+const TAP_TOLERANZ = IST_TOUCH ? KONFIG.mobil.tapToleranzPx : 9;
 
 export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstwerke, erlaubt, verboten, callbacks }) {
   let aktiv = false;
-  let fokus = null; // werkId im Fokus
-  let fokusStand = null; // Standposition vor dem Werk (für Kontemplations-Drift)
+  let fokus = null;
+  let fokusStand = null;
   let fokusSeite = null;
   let fokusZeit = 0;
 
@@ -27,6 +30,7 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
 
   // Bewegung
   const vel = new THREE.Vector2(); // x, z
+  const joy = { x: 0, y: 0 }; // wird von joystick.js beschrieben
   let gehZiel = null;
   let bobPhase = 0;
   let tempoFaktor = 0;
@@ -65,84 +69,57 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     return { bx, bz };
   }
 
-  // ————— Zeiger-Eingabe (Maus + Touch, Multi-Pointer) —————
-  const pointer = new Map(); // pointerId -> {typ:'blick'|'stick', startX, startY, letztX, letztY, weg, t0}
-  let stickDelta = { x: 0, y: 0 };
-
-  function istStickZone(e) {
-    return e.pointerType === "touch" && e.clientX < window.innerWidth * 0.45 && e.clientY > window.innerHeight * 0.35;
-  }
+  // ————— Zeiger-Eingabe: EIN Umseh-Pointer, Tap = Klick —————
+  let lookId = null;
+  let bewegt = 0;
+  let letztX = 0;
+  let letztY = 0;
+  let downZeit = 0;
+  let dxLetzt = 0;
 
   dom.addEventListener("pointerdown", (e) => {
     if (!aktiv) return;
-    const typ = istStickZone(e) && !fokus ? "stick" : "blick";
-    pointer.set(e.pointerId, {
-      typ,
-      startX: e.clientX,
-      startY: e.clientY,
-      letztX: e.clientX,
-      letztY: e.clientY,
-      weg: 0,
-      t0: performance.now(),
-      dxHist: 0,
-    });
+    if (lookId !== null) return; // zweiter Finger auf dem Canvas: ignorieren
+    lookId = e.pointerId;
+    bewegt = 0;
+    dxLetzt = 0;
+    letztX = e.clientX;
+    letztY = e.clientY;
+    downZeit = performance.now();
     dom.setPointerCapture(e.pointerId);
-    if (typ === "stick") callbacks.joystick?.(true, e.clientX, e.clientY, 0, 0);
-    if (typ === "blick") yawVel = 0;
+    yawVel = 0;
   });
 
   dom.addEventListener("pointermove", (e) => {
-    zeiger.x = (e.clientX / window.innerWidth) * 2 - 1;
-    zeiger.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    const p = pointer.get(e.pointerId);
     if (!aktiv) return;
-    if (!p) {
-      if (e.pointerType !== "touch") pruefeHover(e.clientX, e.clientY);
+    if (e.pointerId !== lookId) {
+      if (!IST_TOUCH) pruefeHover(e.clientX, e.clientY);
       return;
     }
-    const dx = e.clientX - p.letztX;
-    const dy = e.clientY - p.letztY;
-    p.letztX = e.clientX;
-    p.letztY = e.clientY;
-    p.weg += Math.abs(dx) + Math.abs(dy);
-    if (p.typ === "blick") {
-      if (fokus) return;
-      zielYaw -= dx * B.drehempfindlichkeit;
-      zielPitch = THREE.MathUtils.clamp(zielPitch - dy * B.drehempfindlichkeit, -1.15, 1.15);
-      p.dxHist = dx;
-    } else {
-      const ox = THREE.MathUtils.clamp(e.clientX - p.startX, -70, 70);
-      const oy = THREE.MathUtils.clamp(e.clientY - p.startY, -70, 70);
-      stickDelta = { x: ox / 70, y: oy / 70 };
-      callbacks.joystick?.(true, p.startX, p.startY, ox, oy);
-    }
+    const dx = e.clientX - letztX;
+    const dy = e.clientY - letztY;
+    letztX = e.clientX;
+    letztY = e.clientY;
+    bewegt += Math.abs(dx) + Math.abs(dy);
+    if (fokus) return;
+    zielYaw -= dx * B.drehempfindlichkeit;
+    zielPitch = THREE.MathUtils.clamp(zielPitch - dy * B.drehempfindlichkeit, -1.15, 1.15);
+    dxLetzt = dx;
   });
 
-  function pointerEnde(e) {
-    const p = pointer.get(e.pointerId);
-    pointer.delete(e.pointerId);
-    if (!aktiv || !p) return;
-    if (p.typ === "stick") {
-      stickDelta = { x: 0, y: 0 };
-      callbacks.joystick?.(false, 0, 0, 0, 0);
-      return;
-    }
+  dom.addEventListener("pointerup", (e) => {
+    if (!aktiv || e.pointerId !== lookId) return;
+    lookId = null;
     // Nachschwingen des Blicks
-    if (!fokus && Math.abs(p.dxHist) > 2) {
-      yawVel = THREE.MathUtils.clamp(-p.dxHist * B.drehempfindlichkeit * 40, -1.5, 1.5);
+    if (!fokus && Math.abs(dxLetzt) > 2) {
+      yawVel = THREE.MathUtils.clamp(-dxLetzt * B.drehempfindlichkeit * 40, -1.5, 1.5);
     }
-    // Tipp/Klick?
-    const dauer = performance.now() - p.t0;
-    if (p.weg < 9 && dauer < 400) klick(e.clientX, e.clientY);
-  }
-  dom.addEventListener("pointerup", pointerEnde);
+    const warTap = bewegt < TAP_TOLERANZ && performance.now() - downZeit < 500;
+    if (warTap) klick(e.clientX, e.clientY);
+  });
+
   dom.addEventListener("pointercancel", (e) => {
-    const p = pointer.get(e.pointerId);
-    if (p?.typ === "stick") {
-      stickDelta = { x: 0, y: 0 };
-      callbacks.joystick?.(false, 0, 0, 0, 0);
-    }
-    pointer.delete(e.pointerId);
+    if (e.pointerId === lookId) lookId = null;
   });
 
   // ————— Tastatur —————
@@ -185,7 +162,6 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
       gehZiel = new THREE.Vector3(t.hit.point.x, 0, t.hit.point.z);
       marker.position.set(gehZiel.x, 0.012, gehZiel.z);
       markerAlter = 0;
-      callbacks.zielMarker?.();
     }
   }
 
@@ -201,7 +177,8 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     const zielPunkt = new THREE.Vector3();
     e.flaeche.getWorldPosition(zielPunkt);
     const groesse = Math.max(e.flaeche.userData.breite || 1, e.flaeche.userData.hoehe || 1);
-    const abstand = THREE.MathUtils.clamp(groesse * 1.35, 1.5, 3.0);
+    const portraitFaktor = camera.aspect < 1 ? 1.3 : 1;
+    const abstand = THREE.MathUtils.clamp(groesse * 1.35 * portraitFaktor, 1.5, 4.2);
     const stand = zielPunkt.clone().addScaledVector(e.normal, abstand);
     stand.y = B.augenhoehe;
 
@@ -246,6 +223,23 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     tween = null;
   }
 
+  // ————— Sheet-Framing: Werk über dem Bottom-Sheet halten —————
+  let sheetOffsetAktiv = false;
+  function setzeSheetOffset(an) {
+    sheetOffsetAktiv = an;
+    wendeSheetOffsetAn();
+  }
+  function wendeSheetOffsetAn() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (sheetOffsetAktiv && istSheetLayout()) {
+      camera.setViewOffset(w, h, 0, h * 0.19, w, h);
+    } else {
+      camera.clearViewOffset();
+    }
+    camera.updateProjectionMatrix();
+  }
+
   // ————— Saalwechsel (Blende übernimmt die UI) —————
   function zuRaum(index) {
     if (index === aktuellerRaum() && !fokus) return;
@@ -264,6 +258,8 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
   }
 
   // ————— Update pro Frame —————
+  let gazeTakt = 0;
+
   function update(dt) {
     if (!aktiv) return;
 
@@ -305,7 +301,7 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
       return;
     }
 
-    // Wunschrichtung: Tasten > Stick > Klickziel
+    // Wunschrichtung: Tasten > Joystick > Klickziel
     const wunsch = new THREE.Vector2();
     let vor = 0;
     let seit = 0;
@@ -313,18 +309,20 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     if (tasten.has("KeyS") || tasten.has("ArrowDown")) vor -= 1;
     if (tasten.has("KeyA") || tasten.has("ArrowLeft")) seit -= 1;
     if (tasten.has("KeyD") || tasten.has("ArrowRight")) seit += 1;
-    if (stickDelta.x || stickDelta.y) {
-      vor = -stickDelta.y;
-      seit = stickDelta.x;
+    if (!vor && !seit && (joy.x || joy.y)) {
+      vor = -joy.y; // Stick oben = vorwärts
+      seit = joy.x;
     }
 
     let zielTempo = B.gehtempo;
-    if (vor || seit) {
+    const mag = Math.min(1, Math.hypot(vor, seit));
+    if (mag > 0) {
       gehZiel = null;
-      const len = Math.hypot(vor, seit) || 1;
+      const inv = 1 / Math.hypot(vor, seit);
       const sin = Math.sin(yaw);
       const cos = Math.cos(yaw);
-      wunsch.set((-sin * vor + cos * seit) / len, (-cos * vor - sin * seit) / len);
+      // analog: halbe Stick-Auslenkung = halbes Tempo
+      wunsch.set((-sin * vor + cos * seit) * inv * mag, (-cos * vor - sin * seit) * inv * mag);
     } else if (gehZiel) {
       const dx = gehZiel.x - camera.position.x;
       const dz = gehZiel.z - camera.position.z;
@@ -332,12 +330,12 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
       if (dist < 0.25) {
         gehZiel = null;
       } else {
-        wunsch.set(dx / dist, dz / dist);
         if (dist < 1) zielTempo = THREE.MathUtils.lerp(0.6, B.gehtempo, dist);
+        wunsch.set((dx / dist) * (zielTempo / B.gehtempo), (dz / dist) * (zielTempo / B.gehtempo));
       }
     }
 
-    wunsch.multiplyScalar(zielTempo);
+    wunsch.multiplyScalar(B.gehtempo);
     const anfahren = 1 - Math.exp(-B.beschleunigung * dt);
     const ausrollen = 1 - Math.exp(-B.daempfung * dt);
     vel.lerp(wunsch, wunsch.lengthSq() > 0 ? anfahren : ausrollen);
@@ -368,6 +366,20 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     camera.position.y = B.augenhoehe + yOff;
     camera.rotation.set(pitch, yaw, roll);
 
+    // Blick-Label (Touch-Ersatz für Hover), gedrosselt auf ~6 Hz
+    if (IST_TOUCH) {
+      gazeTakt += dt;
+      if (gazeTakt >= 0.16) {
+        gazeTakt = 0;
+        const t = trefferUnterZeiger(window.innerWidth / 2, window.innerHeight / 2);
+        const neu = t && t.typ === "werk" && t.hit.distance < 6.5 ? t.hit.object.userData.werkId : null;
+        if (neu !== hoverId) {
+          hoverId = neu;
+          callbacks.hover(neu, 0, 0);
+        }
+      }
+    }
+
     // Marker ein-/ausblenden
     markerAlter += dt;
     if (gehZiel) {
@@ -392,9 +404,18 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     return best;
   }
 
+  // Portrait: vertikales FOV anheben, damit das horizontale Sichtfeld reicht
+  function basisFov() {
+    if (camera.aspect >= 1) return B.fovBasis;
+    const hZiel = THREE.MathUtils.degToRad(KONFIG.mobil.hFovZielGrad);
+    const vNoetig = 2 * Math.atan(Math.tan(hZiel / 2) / camera.aspect);
+    return THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(vNoetig), B.fovBasis, 80);
+  }
+
   function fovZiel() {
-    if (fokus) return B.fovFokus;
-    return B.fovBasis + (B.fovGehen - B.fovBasis) * Math.min(tempoFaktor, 1);
+    const basis = basisFov();
+    if (fokus) return camera.aspect < 1 ? basis - 10 : B.fovFokus;
+    return basis + (B.fovGehen - B.fovBasis) * Math.min(tempoFaktor, 1);
   }
 
   return {
@@ -405,6 +426,9 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
     teleportiere,
     aktuellerRaum,
     fovZiel,
+    joy,
+    setzeSheetOffset,
+    wendeSheetOffsetAn,
     tempo: () => tempoFaktor,
     imFokus: () => !!fokus,
     starte() {

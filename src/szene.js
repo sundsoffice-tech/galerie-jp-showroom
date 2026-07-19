@@ -6,6 +6,7 @@
 import * as THREE from "three";
 import { raeume, werkeImRaum, bildQuelle, galerie } from "./katalog.js";
 import { KONFIG, TIER } from "./konfig.js";
+import { IST_TOUCH, IST_SCHWACH } from "./geraet.js";
 import {
   alsTextur,
   putzCanvas,
@@ -45,9 +46,17 @@ function cssFarbe(hex) {
   return "#" + hex.toString(16).padStart(6, "0");
 }
 
+// Pixel-Ratio-Deckel: Touch-Geräte rendern sonst ein Vielfaches der nötigen Fragmente
+export const DPR_CAP = IST_SCHWACH ? KONFIG.mobil.dprCapSchwach : IST_TOUCH ? KONFIG.mobil.dprCap : 2;
+
 export function erstelleSzene(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: TIER === "B" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, TIER === "A" ? 2 : 1.75));
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    // Desktop (Tier A) bekommt MSAA über den EffectComposer; Touch nur auf Low-DPI
+    antialias: TIER === "A" ? false : window.devicePixelRatio < 2,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = KONFIG.licht.belichtungIntro;
@@ -76,9 +85,10 @@ export function erstelleSzene(canvas) {
 
   // ————— Boden: Fischgrät-Eiche —————
   const parkett = fischgraetCanvas();
+  const ANISO = IST_TOUCH ? 4 : renderer.capabilities.getMaxAnisotropy();
   const bodenTex = alsTextur(parkett.farbe, { wiederholend: true });
   bodenTex.repeat.set(gesamtB / 3, RAUM_T / 3);
-  bodenTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  bodenTex.anisotropy = ANISO;
   const bodenRau = new THREE.CanvasTexture(parkett.rauheit);
   bodenRau.wrapS = bodenRau.wrapT = THREE.RepeatWrapping;
   bodenRau.repeat.copy(bodenTex.repeat);
@@ -371,7 +381,7 @@ export function erstelleSzene(canvas) {
     if (q.typ === "canvas") textur = new THREE.CanvasTexture(q.wert);
     else textur = new THREE.TextureLoader().load(q.wert);
     textur.colorSpace = THREE.SRGBColorSpace;
-    textur.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    textur.anisotropy = ANISO;
 
     // Rahmen als echter Ring aus vier Leisten (eine Box würde das Bild verdecken)
     function rahmenRing(innenB, innenH, dicke, tiefe, material, z) {

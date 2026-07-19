@@ -136,10 +136,8 @@ textarea:focus-visible {
 .intro-hints b { color: var(--ivory); font-weight: 500; }
 .hint-sep { margin: 0 0.7rem; color: var(--brass); }
 .hint-touch { display: none; }
-@media (pointer: coarse) {
-  .hint-desktop { display: none; }
-  .hint-touch { display: inline; }
-}
+html.touch .hint-desktop { display: none; }
+html.touch .hint-touch { display: inline; }
 
 /* ————— Chrome (Leisten) — erscheinen orchestriert ————— */
 
@@ -287,37 +285,56 @@ textarea:focus-visible {
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
 }
 
-/* ————— Touch-Joystick ————— */
+/* ————— Touch-Joystick (fester Rauchglas-Ring links unten) ————— */
 
 #joystick {
   position: fixed;
-  z-index: 18;
-  width: 0;
-  height: 0;
+  z-index: 18; /* unter Panels (30), über Vignette */
+  left: calc(1.1rem + env(safe-area-inset-left));
+  bottom: calc(1.1rem + env(safe-area-inset-bottom));
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: radial-gradient(circle, rgba(17, 15, 12, 0.45), rgba(17, 15, 12, 0.12));
+  backdrop-filter: blur(6px);
+  touch-action: none; /* Pflicht: sonst klaut der Browser den Drag als Scroll */
+  display: none;
+  opacity: 0.75;
+  transition: opacity 0.25s ease;
+}
+#joystick.aktiv { display: block; }
+#joystick.greift { opacity: 1; }
+.joy-nub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.9rem;
+  height: 2.9rem; /* 46 px ≥ 44-px-Touchziel */
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--brass), var(--brass-bright));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ————— Sheet-Backdrop (Warenkorb, nur mobil relevant) ————— */
+
+#sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(5, 4, 3, 0.45);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
-#joystick.sichtbar { opacity: 1; }
-.joy-basis {
-  position: absolute;
-  left: -44px;
-  top: -44px;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  border: 1px solid rgba(237, 231, 220, 0.35);
-  background: rgba(17, 15, 12, 0.25);
-}
-.joy-knauf {
-  position: absolute;
-  left: -18px;
-  top: -18px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(216, 188, 133, 0.75);
-}
+#sheet-backdrop.visible { opacity: 1; pointer-events: auto; }
+
+/* ————— Sheet-Handle (immer im DOM, nur mobil sichtbar) ————— */
+
+.sheet-handle { display: none; }
 
 /* ————— Panels (Saaltext & Sammlung) ————— */
 
@@ -617,41 +634,174 @@ textarea:focus-visible {
   margin-left: 0.7rem;
 }
 
-/* ————— Mobil ————— */
+/* ————— Mobil: Bottom-Sheets, Chips oben, kompakte Top-Bar ————— */
 
-@media (max-width: 640px) {
-  .panel {
+@media (max-width: 480px) {
+  html.touch .panel {
     top: auto;
     bottom: 0;
-    right: 0;
     left: 0;
+    right: 0;
     width: 100%;
-    height: auto;
-    max-height: 78vh;
+    height: 88dvh; /* JS steuert, wie viel davon sichtbar ist */
+    max-height: calc(100dvh - 3.5rem - env(safe-area-inset-top));
     border-left: none;
     border-top: 1px solid var(--line);
-    padding: 2.6rem 1.4rem calc(1.4rem + env(safe-area-inset-bottom));
-    transform: translateY(104%);
+    border-radius: 0.9rem 0.9rem 0 0;
+    padding: 2.9rem 1.3rem calc(1.5rem + env(safe-area-inset-bottom));
+    transform: translateY(105%);
+    overscroll-behavior: contain;
   }
-  .panel.open { transform: translateY(0); }
-  .panel::before {
-    content: "";
+  html.touch .panel.open { transform: none; } /* JS setzt translateY inline */
+  html.touch .panel.dragging { transition: none; }
+
+  html.touch .sheet-handle {
+    display: grid;
+    place-items: center;
     position: absolute;
-    top: 0.7rem;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2.75rem; /* 44-px-Hitzone */
+    cursor: grab;
+    touch-action: none;
+  }
+  html.touch .sheet-handle span {
     width: 2.6rem;
-    height: 3px;
-    border-radius: 2px;
+    height: 0.28rem;
+    border-radius: 999px;
     background: var(--line);
   }
-  .chrome-top { padding: 0.9rem 1rem; padding-top: calc(0.9rem + env(safe-area-inset-top)); }
-  .wordmark { font-size: 1.05rem; }
-  .room-nav { bottom: calc(0.9rem + env(safe-area-inset-bottom)); }
-  .room-nav button { padding: 0.6rem 0.7rem; letter-spacing: 0.12em; }
+
+  html.touch .chrome-top {
+    padding: calc(0.55rem + env(safe-area-inset-top))
+      calc(0.9rem + env(safe-area-inset-right)) 0.55rem
+      calc(0.9rem + env(safe-area-inset-left));
+  }
+  html.touch .wordmark { font-size: 1.05rem; letter-spacing: 0.1em; }
+  html.touch .cart-btn { min-height: 44px; padding: 0.55rem 0.9rem; letter-spacing: 0.16em; }
+
+  /* Saal-Navigation wird Chip-Leiste OBEN (unten wohnen Joystick + Sheets) */
+  html.touch .room-nav {
+    bottom: auto;
+    top: calc(3.4rem + env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    transform: none;
+    gap: 0.5rem;
+    padding: 0.3rem calc(0.9rem + env(safe-area-inset-left));
+    background: transparent;
+    border: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 calc(100% - 1rem), transparent);
+  }
+  html.touch .room-nav.sichtbar { transform: none; }
+  html.touch .room-nav::-webkit-scrollbar { display: none; }
+  html.touch .room-nav button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0.6rem 1.05rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--glass-soft);
+    backdrop-filter: blur(8px);
+  }
+  html.touch .room-nav button.active {
+    color: var(--brass-bright);
+    border-color: var(--brass);
+    background: rgba(194, 163, 107, 0.12);
+  }
+
+  /* Modal am unteren Rand, Tastatur-tauglich (--vvh aus main.js) */
+  html.touch .modal { place-items: end center; }
+  html.touch .modal-card {
+    width: 100%;
+    max-height: calc(var(--vvh, 100dvh) - 2.5rem);
+    border-radius: 0.9rem 0.9rem 0 0;
+    padding: 1.8rem 1.3rem calc(1.6rem + env(safe-area-inset-bottom));
+  }
+
   .aw-title { font-size: 1.6rem; }
-  #hover-label { display: none; }
   .intro-hints .hint-sep { display: none; }
+}
+
+/* ————— Touch-Ziele & Hover-Neutralisierung (alle Touch-Geräte) —————
+   html.touch wird von geraet.js gesetzt (pointer: coarse ODER ?touch=1) */
+
+html.touch .panel-close {
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 1.7rem;
+}
+html.touch .cart-item-remove {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.3rem;
+}
+html.touch button, html.touch .btn-brass, html.touch .cart-btn { touch-action: manipulation; }
+html.touch .cart-btn:hover, html.touch .room-nav button:hover { border-color: var(--line); color: inherit; }
+html.touch .btn-brass:hover:not(:disabled) { filter: none; }
+html.touch #checkout-form input, html.touch #checkout-form textarea { font-size: 16px; } /* iOS-Auto-Zoom */
+
+/* Blick-Label: fix unten mittig statt am Zeiger */
+html.touch #hover-label {
+  left: 50% !important;
+  top: auto !important;
+  bottom: calc(1.4rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  text-align: center;
+}
+html.touch #hover-label .hl-tipp {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  margin-top: 0.25rem;
+}
+
+/* ————— Handy-Landscape: Seiten-Panels statt Sheets ————— */
+
+@media (max-height: 480px) and (orientation: landscape) {
+  html.touch .panel {
+    top: 0;
+    bottom: 0;
+    left: auto;
+    right: 0;
+    width: min(22rem, 58vw);
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    border-top: none;
+    border-left: 1px solid var(--line);
+    padding: 3rem 1.3rem 1.3rem;
+    padding-right: calc(1.3rem + env(safe-area-inset-right));
+    transform: translateX(102%);
+  }
+  html.touch .panel.open { transform: translateX(0); }
+  html.touch .sheet-handle { display: none; }
+  html.touch .chrome-top {
+    padding: 0.4rem calc(0.9rem + env(safe-area-inset-right)) 0.4rem
+      calc(0.9rem + env(safe-area-inset-left));
+  }
+  html.touch .room-nav {
+    top: auto;
+    bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    left: 9.5rem; /* Platz für den Joystick */
+    right: 0;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  html.touch #joystick { width: 6.4rem; height: 6.4rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

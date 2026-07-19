@@ -4,6 +4,8 @@
 
 import { raeume, raumById, werkById, formatPreis, bildThumbnail } from "./katalog.js";
 import * as klang from "./klang.js";
+import { machBottomSheet } from "./bottomsheet.js";
+import { IST_TOUCH } from "./geraet.js";
 
 const LS_SAMMLUNG = "galerie-jp-sammlung";
 const LS_VERKAUFT = "galerie-jp-verkauft";
@@ -41,11 +43,14 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       return;
     }
     const werk = werkById(werkId);
-    hoverLabel.innerHTML = `${werk.titel}<span class="hl-price">${
-      werk.verkauft ? "VERKAUFT" : formatPreis(werk.preis)
-    }</span>`;
-    hoverLabel.style.left = `${x}px`;
-    hoverLabel.style.top = `${y}px`;
+    hoverLabel.innerHTML =
+      `${werk.titel}<span class="hl-price">${werk.verkauft ? "VERKAUFT" : formatPreis(werk.preis)}</span>` +
+      (IST_TOUCH ? '<span class="hl-tipp">Antippen für Details</span>' : "");
+    if (!IST_TOUCH) {
+      // nur der Desktop-Zeiger wandert; das Blick-Label sitzt fix (CSS)
+      hoverLabel.style.left = `${x}px`;
+      hoverLabel.style.top = `${y}px`;
+    }
     hoverLabel.classList.add("visible");
   }
 
@@ -80,20 +85,11 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     }, 380);
   }
 
-  // ————— Touch-Joystick —————
-  const joy = $("joystick");
-  const joyKnauf = joy.querySelector(".joy-knauf");
-
-  function joystick(aktiv, bx, by, dx, dy) {
-    if (!aktiv) {
-      joy.classList.remove("sichtbar");
-      return;
-    }
-    joy.classList.add("sichtbar");
-    joy.style.left = `${bx}px`;
-    joy.style.top = `${by}px`;
-    joyKnauf.style.transform = `translate(${dx * 0.5}px, ${dy * 0.5}px)`;
-  }
+  // ————— Sheet-Backdrop (nur Warenkorb; das Werk-Sheet lässt die Szene frei) —————
+  const backdrop = document.createElement("div");
+  backdrop.id = "sheet-backdrop";
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click", () => schliesseCart());
 
   // ————— Stummschalter —————
   const muteBtn = $("mute");
@@ -117,11 +113,20 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   });
 
   function markiereRaum(index) {
-    [...nav.children].forEach((b, i) => b.classList.toggle("active", i === index));
+    [...nav.children].forEach((b, i) => {
+      b.classList.toggle("active", i === index);
+      if (i === index && IST_TOUCH) {
+        b.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    });
   }
 
   // ————— Werk-Panel —————
   const panel = $("artwork-panel");
+  const werkSheet = machBottomSheet(panel, {
+    peek: 0.46,
+    onClose: () => schliesseWerkPanel(),
+  });
 
   function oeffneWerk(werkId) {
     const werk = werkById(werkId);
@@ -137,8 +142,9 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("aw-desc").textContent = werk.beschreibung;
     $("aw-price").textContent = formatPreis(werk.preis);
     aktualisiereKaufButton();
-    panel.classList.add("open");
+    if (!werkSheet.oeffne("peek")) panel.classList.add("open"); // Desktop/Landscape
     panel.setAttribute("aria-hidden", "false");
+    steuerungRef().setzeSheetOffset(true);
   }
 
   function aktualisiereKaufButton() {
@@ -171,13 +177,26 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   function schliesseWerkPanel() {
     offenesWerk = null;
+    werkSheet.schliesse();
     panel.classList.remove("open");
     panel.setAttribute("aria-hidden", "true");
     steuerungRef().fokusVerlassen();
+    steuerungRef().setzeSheetOffset(false);
   }
 
   // ————— Sammlung (Warenkorb) —————
   const cartPanel = $("cart-panel");
+  const cartSheet = machBottomSheet(cartPanel, {
+    peek: 0.6,
+    onClose: () => schliesseCart(),
+  });
+
+  function schliesseCart() {
+    cartSheet.schliesse();
+    cartPanel.classList.remove("open");
+    cartPanel.setAttribute("aria-hidden", "true");
+    backdrop.classList.remove("visible");
+  }
 
   function speichereSammlung() {
     localStorage.setItem(LS_SAMMLUNG, JSON.stringify(sammlung));
@@ -211,7 +230,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       img.src = bildThumbnail(werk);
       img.alt = werk.titel;
       img.addEventListener("click", () => {
-        cartPanel.classList.remove("open");
+        schliesseCart();
         steuerungRef().fokussiere(id);
       });
       const mitte = document.createElement("div");
@@ -277,7 +296,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   // ————— Öffnen / Schließen —————
   $("cart-open").addEventListener("click", () => {
     renderSammlung();
-    cartPanel.classList.add("open");
+    if (!cartSheet.oeffne("voll")) cartPanel.classList.add("open");
+    else backdrop.classList.add("visible");
     cartPanel.setAttribute("aria-hidden", "false");
   });
 
@@ -285,10 +305,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     b.addEventListener("click", () => {
       const ziel = b.dataset.close;
       if (ziel === "artwork") schliesseWerkPanel();
-      if (ziel === "cart") {
-        cartPanel.classList.remove("open");
-        cartPanel.setAttribute("aria-hidden", "true");
-      }
+      if (ziel === "cart") schliesseCart();
       if (ziel === "checkout") checkout.classList.add("hidden");
     })
   );
@@ -296,9 +313,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   window.addEventListener("keydown", (e) => {
     if (e.code !== "Escape") return;
     if (!checkout.classList.contains("hidden")) checkout.classList.add("hidden");
-    else if (cartPanel.classList.contains("open")) {
-      cartPanel.classList.remove("open");
-    } else if (panel.classList.contains("open")) schliesseWerkPanel();
+    else if (cartPanel.classList.contains("open")) schliesseCart();
+    else if (panel.classList.contains("open")) schliesseWerkPanel();
   });
 
   renderSammlung();
@@ -309,7 +325,6 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     zeigeHover,
     markiereRaum,
     blendeZuSaal,
-    joystick,
     introAusblenden,
     zeigeChrome,
   };

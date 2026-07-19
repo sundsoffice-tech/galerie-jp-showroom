@@ -7,7 +7,9 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { werke, galerie, raeume } from "./katalog.js";
 import { KONFIG, TIER } from "./konfig.js";
-import { erstelleSzene } from "./szene.js";
+import { IST_TOUCH } from "./geraet.js";
+import { erstelleSzene, DPR_CAP } from "./szene.js";
+import { erstelleJoystick } from "./joystick.js";
 import { erstelleSteuerung } from "./steuerung.js";
 import { erstelleUI, ladeVerkaufte } from "./ui.js";
 import { erstelleIntro } from "./intro.js";
@@ -77,7 +79,6 @@ steuerung = erstelleSteuerung({
     schliessePanel: () => ui.schliesseWerkPanel(),
     hover: (id, x, y) => ui.zeigeHover(id, x, y),
     saalwechsel: (index, teleport) => ui.blendeZuSaal(raeume[index], teleport),
-    joystick: (aktiv, bx, by, dx, dy) => ui.joystick(aktiv, bx, by, dx, dy),
     schritt: (links, tempo) => klang.schritt(links, tempo),
     fokusKlang: () => klang.fokusWusch(),
   },
@@ -93,6 +94,18 @@ const intro = erstelleIntro({
 
 document.getElementById("enter").addEventListener("click", () => intro.eintreten());
 
+// Touch: fester Joystick links unten, erscheint mit dem Eintritt
+const joystick = IST_TOUCH ? erstelleJoystick(steuerung.joy) : null;
+let joystickGezeigt = false;
+
+// Bildschirmtastatur (iOS): echte sichtbare Höhe als CSS-Variable pflegen
+if (window.visualViewport) {
+  const vv = () =>
+    document.documentElement.style.setProperty("--vvh", `${window.visualViewport.height}px`);
+  window.visualViewport.addEventListener("resize", vv);
+  vv();
+}
+
 // ————— Render-Loop —————
 const clock = new THREE.Clock();
 let letzterRaum = -1;
@@ -103,6 +116,10 @@ function loop() {
 
   const introAktiv = intro.update(dt);
   if (!introAktiv) {
+    if (joystick && !joystickGezeigt) {
+      joystickGezeigt = true;
+      joystick.zeige(true);
+    }
     steuerung.update(dt);
     // FOV weich nachführen
     const fovZiel = steuerung.fovZiel();
@@ -154,10 +171,16 @@ loop();
 // Debug-Zugriff für Entwicklung (window.__galerie)
 window.__galerie = { szene, steuerung: () => steuerung, qualitaet: () => qualitaet };
 
-// ————— Resize —————
-window.addEventListener("resize", () => {
-  szene.camera.aspect = window.innerWidth / window.innerHeight;
+// ————— Resize (inkl. Orientation-Wechsel) —————
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  szene.camera.aspect = w / h;
   szene.camera.updateProjectionMatrix();
-  szene.renderer.setSize(window.innerWidth, window.innerHeight);
-  composer?.setSize(window.innerWidth, window.innerHeight);
-});
+  szene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+  szene.renderer.setSize(w, h);
+  composer?.setSize(w, h);
+  steuerung.wendeSheetOffsetAn();
+}
+window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", resize);

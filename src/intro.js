@@ -12,7 +12,7 @@ const B = KONFIG.besucher;
 export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }) {
   let modus = "drift"; // drift → eintritt → fertig
   let zeit = 0;
-  let eintrittZeit = 0;
+  let eintrittStart = 0; // Echtzeit — übersteht pausierte Frames (Tab im Hintergrund)
   let driftPose = null;
   const cx0 = raumZentrumX(0);
   const startPos = new THREE.Vector3(cx0, B.augenhoehe, RAUM_T * 0.32);
@@ -31,7 +31,7 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
     if (modus !== "drift") return;
     klang.starte();
     modus = "eintritt";
-    eintrittZeit = 0;
+    eintrittStart = performance.now();
     planIndex = 0;
     driftPose = {
       pos: camera.position.clone(),
@@ -76,8 +76,8 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
       return true;
     }
 
-    // ————— Eintritt —————
-    eintrittZeit += dt;
+    // ————— Eintritt (Echtzeit statt Frame-Zeit) —————
+    const eintrittZeit = (performance.now() - eintrittStart) / 1000;
     while (planIndex < plan.length && eintrittZeit >= plan[planIndex].t) {
       plan[planIndex].fn();
       planIndex++;

@@ -53,6 +53,16 @@ export const KONFIG = {
     hallAnteil: 0.35, // Nachhall des Saals
   },
 
+  mobil: {
+    dprCap: 1.5, // Pixel-Ratio-Deckel auf Touch (Desktop: 2)
+    dprCapSchwach: 1.25, // bei <=4 Kernen / <=4 GB RAM
+    tapToleranzPx: 14, // Finger wackeln mehr als ein Mauszeiger (Desktop: 9)
+    joystickRadiusPx: 44, // maximale Knauf-Auslenkung
+    joystickDeadzone: 0.18,
+    platzhalterHoehe: 640, // Platzhalter-Auflösung auf Touch (Desktop: 1024)
+    hFovZielGrad: 44, // Ziel-Horizontal-Sichtfeld im Portrait
+  },
+
   haengung: {
     // Plätze pro Wand — mehr Werke als Plätze werden (mit Konsolen-
     // Hinweis) nicht gehängt. Reihenfolge: Nordwand, Südwand, Stirnwand.
@@ -70,17 +80,11 @@ export const KONFIG = {
   },
 };
 
-// ————— Laufzeit-Erkennung (nicht anfassen) —————
+// ————— Laufzeit-Erkennung (nicht anfassen, Details in geraet.js) —————
 // Tier A = Desktop (Bloom, Museumsglas, Physical-Parkett)
 // Tier B = Touch/kleine Geräte (schlanker Renderpfad, gleiche Fake-Lichter)
-export const IST_TOUCH =
-  typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+import { IST_TOUCH as _touch } from "./geraet.js";
+export { IST_TOUCH, IST_SCHWACH, REDUZIERTE_BEWEGUNG } from "./geraet.js";
 
-export const IST_KLEIN =
-  typeof window !== "undefined" && Math.min(screen.width, screen.height) < 820;
-
-export const TIER = IST_TOUCH || IST_KLEIN ? "B" : "A";
-
-export const REDUZIERTE_BEWEGUNG =
-  typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const _klein = typeof window !== "undefined" && Math.min(screen.width, screen.height) < 820;
+export const TIER = _touch || _klein ? "B" : "A";

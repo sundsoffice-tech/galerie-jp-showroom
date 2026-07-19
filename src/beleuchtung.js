@@ -37,7 +37,7 @@ export function erstelleBeleuchtung(scene, renderer, raeume, raumZentrumX) {
   // Vor dem Eintritt glimmen die Lichter auf 30 %; zuendeLichter()
   // fährt sie werkweise versetzt auf den Zielwert (mit Zünd-Flackern).
   const register = [];
-  let zuendStart = null;
+  let zuendStart = null; // Echtzeit-Startpunkt (übersteht pausierte Frames)
 
   function registriere(material, ziel, reihenfolge = 0) {
     material.opacity = ziel * 0.3;
@@ -45,15 +45,15 @@ export function erstelleBeleuchtung(scene, renderer, raeume, raumZentrumX) {
   }
 
   function zuendeLichter() {
-    zuendStart = 0; // wird im update hochgezählt
+    zuendStart = performance.now();
   }
 
-  function update(dt) {
+  function update() {
     if (zuendStart === null) return;
-    zuendStart += dt;
+    const verstrichen = (performance.now() - zuendStart) / 1000;
     let fertig = true;
     for (const e of register) {
-      const t = (zuendStart - e.verzoegerung) / 0.8;
+      const t = (verstrichen - e.verzoegerung) / 0.8;
       if (t < 0) {
         fertig = false;
         continue;

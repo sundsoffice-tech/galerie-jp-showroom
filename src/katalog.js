@@ -5,6 +5,8 @@
 // ein Platzhalter-Werk passend zum Thema des Raums.
 
 import daten from "./data/werke.json";
+import { KONFIG } from "./konfig.js";
+import { IST_TOUCH, IST_SCHWACH } from "./geraet.js";
 
 const preisFormat = new Intl.NumberFormat("de-DE", {
   style: "currency",
@@ -75,7 +77,7 @@ function rngFactory(seed) {
 function platzhalterCanvas(werk) {
   const rnd = rngFactory(seedAusString(werk.id + werk.titel));
   const ratio = werk.breite_cm / werk.hoehe_cm;
-  const H = 1024;
+  const H = IST_TOUCH ? KONFIG.mobil.platzhalterHoehe : 1024;
   const W = Math.round(H * ratio);
   const c = document.createElement("canvas");
   c.width = W;
@@ -86,7 +88,8 @@ function platzhalterCanvas(werk) {
   else if (werk.raum === "abstraktion") malAbstraktion(ctx, W, H, rnd);
   else malModerne(ctx, W, H, rnd);
 
-  koernung(ctx, W, H, rnd, werk.raum === "fotografie" ? 26 : 10);
+  // Körnung ist rein kosmetisch — auf schwachen Geräten überspringen
+  if (!IST_SCHWACH) koernung(ctx, W, H, rnd, werk.raum === "fotografie" ? 26 : 10);
   return c;
 }
 

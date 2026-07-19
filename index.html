@@ -30,7 +30,7 @@
         <span class="hint-desktop"><b>W A S D</b> oder <b>Klick auf den Boden</b> zum Gehen</span>
         <span class="hint-sep hint-desktop">·</span>
         <span class="hint-desktop"><b>Klick auf ein Werk</b> für Details &amp; Kauf</span>
-        <span class="hint-touch"><b>Links wischen</b> zum Gehen · <b>Rechts wischen</b> zum Umsehen · <b>Tippen</b> für Details</span>
+        <span class="hint-touch"><b>Ziehen</b> zum Umsehen · <b>Boden antippen</b> zum Gehen · <b>Werk antippen</b> für Details</span>
       </div>
     </div>
   </div>
@@ -56,14 +56,9 @@
     <p class="sc-name">Moderne</p>
   </div>
 
-  <!-- Touch-Joystick -->
-  <div id="joystick" aria-hidden="true">
-    <div class="joy-basis"></div>
-    <div class="joy-knauf"></div>
-  </div>
-
   <!-- Werk-Detailpanel (Saaltext) -->
   <aside id="artwork-panel" class="panel artwork-panel" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="artwork" aria-label="Schließen">×</button>
     <p class="eyebrow" id="aw-room">Saal I — Moderne</p>
     <h2 class="aw-title" id="aw-title">Titel</h2>
@@ -90,6 +85,7 @@
 
   <!-- Sammlung (Warenkorb) -->
   <aside id="cart-panel" class="panel cart-panel" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="cart" aria-label="Schließen">×</button>
     <p class="eyebrow">Ihre Sammlung</p>
     <div id="cart-items" class="cart-items"></div>
