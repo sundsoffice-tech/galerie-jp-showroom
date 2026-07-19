@@ -290,7 +290,7 @@
       </div>
       <p id="ratio-vorschau"></p>
       <div class="form-reihe">
-        <label>Preis (€)<input id="e-preis" type="number" min="0" step="100" /></label>
+        <label>Preis (€) — leer lassen für „Preis auf Anfrage"<input id="e-preis" type="number" min="0" step="100" placeholder="auf Anfrage" /></label>
         <label>Bilddatei<input id="e-bild" placeholder="w-013.jpg · leer = Platzhalter" /></label>
       </div>
       <p class="hinweis">Foto vor dem Deploy nach <b>public/werke/</b> legen; leer = automatischer Platzhalter.</p>
@@ -324,6 +324,14 @@
     let editIndex = -1; // -1 = neues Werk
 
     const $ = (id) => document.getElementById(id);
+
+    // Werktitel/Saalnamen dürfen Anführungszeichen und < > enthalten,
+    // ohne das erzeugte Markup zu zerstören.
+    function esc(text) {
+      return String(text ?? "").replace(/[&<>"']/g, (z) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[z]);
+    }
 
     // ————— Status —————
     function setzeStatus() {
@@ -417,7 +425,11 @@
 
     function kapazitaet(raumIndex) {
       const laengs = 6;
-      const stirn = (raumIndex === 0 || raumIndex === daten.raeume.length - 1) ? 2 : 0;
+      // Erster UND letzter Saal haben je eine Stirnwand; bei nur einem Saal
+      // fällt er in beide Rollen und bekommt beide Stirnwände.
+      let stirn = 0;
+      if (raumIndex === 0) stirn += 2;
+      if (raumIndex === daten.raeume.length - 1) stirn += 2;
       return laengs + stirn;
     }
 
@@ -430,9 +442,9 @@
         const zeile = document.createElement("div");
         zeile.className = "saal-zeile";
         zeile.innerHTML = `
-          <input value="${raum.saal || ""}" data-feld="saal" aria-label="Saal-Nummer" />
-          <input value="${raum.name || ""}" data-feld="name" aria-label="Saal-Name" />
-          <input value="${raum.beschreibung || ""}" data-feld="beschreibung" aria-label="Beschreibung" />
+          <input value="${esc(raum.saal)}" data-feld="saal" aria-label="Saal-Nummer" />
+          <input value="${esc(raum.name)}" data-feld="name" aria-label="Saal-Name" />
+          <input value="${esc(raum.beschreibung)}" data-feld="beschreibung" aria-label="Beschreibung" />
           <span class="kapazitaet ${belegt > kap ? "voll" : ""}">${belegt} / ${kap} Plätzen${belegt > kap ? ` · ${belegt - kap} ungehängt!` : ""}</span>
         `;
         const del = document.createElement("button");
@@ -479,7 +491,7 @@
       const filter = $("filter-saal");
       const vorher = filter.value;
       filter.innerHTML = '<option value="">Alle Säle</option>' +
-        daten.raeume.map((r) => `<option value="${r.id}">${r.name}</option>`).join("");
+        daten.raeume.map((r) => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("");
       filter.value = vorher;
 
       const suchwort = $("suche").value.trim().toLowerCase();
@@ -494,12 +506,14 @@
           const karte = document.createElement("div");
           karte.className = "werk-karte";
           const raum = daten.raeume.find((r) => r.id === werk.raum);
-          const preis = new Intl.NumberFormat("de-DE", { style: "currency", currency: daten.galerie.waehrung || "EUR", maximumFractionDigits: 0 }).format(werk.preis || 0);
+          const preis = werk.preis == null
+            ? "Preis auf Anfrage"
+            : new Intl.NumberFormat("de-DE", { style: "currency", currency: daten.galerie.waehrung || "EUR", maximumFractionDigits: 0 }).format(werk.preis);
           karte.innerHTML = `
             <div class="werk-thumb">${werk.bild ? `<img alt="" />` : "Platz-<br>halter"}</div>
             <div>
-              <div class="werk-titel">${werk.titel}</div>
-              <div class="werk-sub">${werk.kuenstler}, ${werk.jahr} · ${raum ? raum.name : "?"} · ${werk.breite_cm}×${werk.hoehe_cm} cm · ${preis}</div>
+              <div class="werk-titel">${esc(werk.titel)}</div>
+              <div class="werk-sub">${esc(werk.kuenstler)}, ${esc(werk.jahr)} · ${esc(raum ? raum.name : "?")} · ${esc(werk.breite_cm)}×${esc(werk.hoehe_cm)} cm · ${esc(preis)}</div>
             </div>
             <span class="badge ${werk.verkauft ? "verkauft" : ""}">${werk.verkauft ? "Verkauft" : "Verfügbar"}</span>
           `;
@@ -518,6 +532,8 @@
           dup.textContent = "Duplizieren";
           dup.addEventListener("click", () => {
             const kopie = { ...werk, id: neueWerkId(), titel: werk.titel + " (Kopie)", verkauft: false };
+            // Ein Payment Link gilt genau einem Unikat — niemals mitkopieren
+            delete kopie.stripeLink;
             daten.werke.push(kopie);
             markiereGeaendert();
             renderWerke();
@@ -567,7 +583,7 @@
       $("e-technik").value = werk.technik;
       $("e-breite").value = werk.breite_cm;
       $("e-hoehe").value = werk.hoehe_cm;
-      $("e-preis").value = werk.preis;
+      $("e-preis").value = werk.preis == null ? "" : werk.preis; // leer = auf Anfrage
       $("e-bild").value = werk.bild || "";
       $("e-stripe").value = werk.stripeLink || "";
       $("e-verkauft").checked = !!werk.verkauft;
@@ -592,7 +608,7 @@
       if (!w.titel.trim()) f.push("Titel fehlt.");
       if (!w.kuenstler.trim()) f.push("Künstler fehlt.");
       if (!daten.raeume.some((r) => r.id === w.raum)) f.push("Unbekannter Saal.");
-      if (!(w.preis > 0)) f.push("Preis muss größer 0 sein.");
+      if (w.preis !== null && !(w.preis > 0)) f.push("Preis muss größer 0 sein (oder leer für „auf Anfrage\").");
       if (!(w.breite_cm > 0 && w.hoehe_cm > 0)) f.push("Maße müssen größer 0 sein.");
       if (daten.werke.some((x, i) => x.id === w.id && i !== editIndex)) f.push("ID doppelt vergeben.");
       if (w.stripeLink && !/^https:\/\/buy\.stripe\.com\//.test(w.stripeLink))
@@ -610,7 +626,7 @@
         technik: $("e-technik").value,
         breite_cm: +$("e-breite").value,
         hoehe_cm: +$("e-hoehe").value,
-        preis: +$("e-preis").value,
+        preis: $("e-preis").value.trim() === "" ? null : +$("e-preis").value,
         bild: $("e-bild").value.trim() || null,
         verkauft: $("e-verkauft").checked,
         beschreibung: $("e-beschreibung").value,
@@ -634,7 +650,32 @@
     $("werk-neu").addEventListener("click", () => oeffneEditor(-1));
 
     // ————— Download —————
+    // Vor dem Download prüfen, was den deployten Showroom brechen würde
+    function pruefeGesamt() {
+      const f = [];
+      if (!daten.raeume.length) f.push("Es ist kein Saal angelegt — der Showroom kann so nicht starten.");
+      if (!daten.galerie.name?.trim()) f.push("Der Galeriename fehlt.");
+      const idsGesehen = new Set();
+      daten.werke.forEach((w) => {
+        if (idsGesehen.has(w.id)) f.push(`Doppelte Werk-ID: ${w.id}`);
+        idsGesehen.add(w.id);
+        if (!daten.raeume.some((r) => r.id === w.raum))
+          f.push(`„${w.titel}" verweist auf einen nicht existierenden Saal (${w.raum}).`);
+      });
+      const saalIds = new Set();
+      daten.raeume.forEach((r) => {
+        if (saalIds.has(r.id)) f.push(`Doppelte Saal-ID: ${r.id}`);
+        saalIds.add(r.id);
+      });
+      return f;
+    }
+
     $("download").addEventListener("click", () => {
+      const probleme = pruefeGesamt();
+      if (probleme.length) {
+        alert("Die Datei würde den Showroom beschädigen:\n\n• " + probleme.join("\n• "));
+        return;
+      }
       const blob = new Blob([JSON.stringify(daten, null, 2) + "\n"], { type: "application/json" });
       const a = Object.assign(document.createElement("a"), {
         href: URL.createObjectURL(blob),

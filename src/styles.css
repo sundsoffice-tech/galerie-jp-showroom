@@ -820,7 +820,9 @@ html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
     left: 0;
     right: 0;
     width: 100%;
+    height: 88vh; /* Fallback für Browser ohne dvh */
     height: 88dvh; /* JS steuert, wie viel davon sichtbar ist */
+    max-height: calc(100vh - 3.5rem - env(safe-area-inset-top));
     max-height: calc(100dvh - 3.5rem - env(safe-area-inset-top));
     border-left: none;
     border-top: 1px solid var(--line);
@@ -896,6 +898,7 @@ html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
   html.touch .modal { place-items: end center; }
   html.touch .modal-card {
     width: 100%;
+    max-height: calc(var(--vvh, 100vh) - 2.5rem);
     max-height: calc(var(--vvh, 100dvh) - 2.5rem);
     border-radius: 0.9rem 0.9rem 0 0;
     padding: 1.8rem 1.3rem calc(1.6rem + env(safe-area-inset-bottom));
@@ -970,11 +973,15 @@ html.touch #hover-label .hl-tipp {
     padding: 0.4rem calc(0.9rem + env(safe-area-inset-right)) 0.4rem
       calc(0.9rem + env(safe-area-inset-left));
   }
-  html.touch .room-nav {
+  html.touch .room-nav,
+  html.touch .room-nav.sichtbar {
     top: auto;
     bottom: calc(0.5rem + env(safe-area-inset-bottom));
     left: 9.5rem; /* Platz für den Joystick */
     right: 0;
+    /* ohne transform: none bliebe translateX(-50%) aus der Basisregel aktiv
+       und schöbe die fast viewportbreite Leiste halb aus dem Bild */
+    transform: none;
     mask-image: none;
     -webkit-mask-image: none;
   }

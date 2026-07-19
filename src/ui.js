@@ -33,6 +33,20 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   let offenesWerk = null;
   let fokusVorher = null; // Tastatur-Fokus vor dem Öffnen eines Panels
 
+  function merkeFokus() {
+    const el = document.activeElement;
+    // Fokus in einem gerade schließenden Panel wäre nach dem Schließen unsichtbar
+    fokusVorher = el && !el.closest(".panel") && el !== document.body ? el : null;
+  }
+
+  function stelleFokusWiederHer() {
+    // nur zurückgeben, wenn das Element noch existiert und sichtbar ist
+    if (fokusVorher && fokusVorher.isConnected && fokusVorher.offsetParent !== null) {
+      fokusVorher.focus({ preventScroll: true });
+    }
+    fokusVorher = null;
+  }
+
   // Screenreader-Statusmeldungen (aria-live)
   function melde(text) {
     $("sr-status").textContent = text;
@@ -184,7 +198,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     panel.setAttribute("aria-hidden", "false");
     steuerungRef().setzeSheetOffset(true);
     if (warZu) {
-      fokusVorher = document.activeElement;
+      merkeFokus();
       panel.querySelector(".panel-close").focus({ preventScroll: true });
     }
   }
@@ -262,8 +276,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     steuerungRef().fokusVerlassen();
     steuerungRef().setzeSheetOffset(false);
     history.replaceState(null, "", location.pathname + location.search);
-    if (fokusVorher?.focus) fokusVorher.focus({ preventScroll: true });
-    fokusVorher = null;
+    stelleFokusWiederHer();
   }
 
   // ————— Sammlung (Warenkorb) —————
@@ -338,7 +351,10 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   // ————— Katalog: alle Werke als 2D-Übersicht —————
   const catalogPanel = $("catalog-panel");
-  const catalogSheet = machBottomSheet(catalogPanel, { peek: 0.88 });
+  const catalogSheet = machBottomSheet(catalogPanel, {
+    peek: 0.88,
+    onClose: () => schliesseKatalog(), // sonst bliebe aria-hidden falsch stehen
+  });
 
   function renderKatalog() {
     const grid = $("catalog-grid");
@@ -368,13 +384,14 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     catalogSheet.schliesse();
     catalogPanel.classList.remove("open");
     catalogPanel.setAttribute("aria-hidden", "true");
+    stelleFokusWiederHer();
   }
 
   $("catalog-open").addEventListener("click", () => {
     renderKatalog();
     if (!catalogSheet.oeffne("voll")) catalogPanel.classList.add("open");
     catalogPanel.setAttribute("aria-hidden", "false");
-    fokusVorher = document.activeElement;
+    merkeFokus();
     catalogPanel.querySelector(".panel-close").focus({ preventScroll: true });
   });
 
@@ -401,6 +418,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       $("legal-titel").textContent = eintrag.titel;
       $("legal-text").textContent = eintrag.text;
       legal.classList.remove("hidden");
+      merkeFokus();
+      legal.querySelector(".panel-close").focus({ preventScroll: true });
     })
   );
   legal.addEventListener("click", (e) => {
@@ -429,6 +448,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("checkout-form-view").classList.remove("hidden");
     $("checkout-success-view").classList.add("hidden");
     checkout.classList.remove("hidden");
+    merkeFokus();
+    checkout.querySelector('input[name="name"]').focus({ preventScroll: true });
   });
 
   // Reservierung per E-Mail an die Galerie — serverlos über Web3Forms.
@@ -554,6 +575,38 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   });
 
   renderSammlung();
+
+  // Ein Stripe-Kauf schließt in einem zweiten Tab ab (?erworben=…). Dieser Tab
+  // erfährt davon nur über den localStorage — sonst bliebe das bezahlte Unikat
+  // hier als kaufbar in der Sammlung liegen.
+  window.addEventListener("storage", (e) => {
+    if (e.key !== LS_VERKAUFT) return;
+    let verkaufte = [];
+    try {
+      verkaufte = JSON.parse(e.newValue) || [];
+    } catch {
+      return;
+    }
+    let geaendert = false;
+    verkaufte.forEach((id) => {
+      const werk = werkById(id);
+      if (werk && !werk.verkauft) {
+        werk.verkauft = true;
+        aktualisiereVerkauft(id);
+        geaendert = true;
+      }
+      if (sammlung.includes(id)) {
+        sammlung = sammlung.filter((x) => x !== id);
+        geaendert = true;
+      }
+    });
+    if (!geaendert) return;
+    speichereSammlung();
+    renderSammlung();
+    aktualisiereKaufButton();
+    aktualisiereNavZaehler();
+    melde("Ein Werk wurde soeben verkauft und aus Ihrer Sammlung entfernt.");
+  });
 
   return {
     oeffneWerk,

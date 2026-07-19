@@ -2,7 +2,9 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <!-- kein user-scalable=no: Pinch-Zoom muss möglich bleiben (WCAG 1.4.4).
+       Zoom-Konflikte im Rundgang verhindert touch-action: none auf dem Canvas. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Galerie JP — Virtueller Showroom</title>
   <meta name="description" content="Der virtuelle Showroom der Galerie JP: Drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar. Begehbar in 3D." />
   <meta name="theme-color" content="#0c0b09" />
@@ -65,7 +67,7 @@
   </div>
 
   <!-- Werk-Detailpanel (Saaltext) -->
-  <aside id="artwork-panel" class="panel artwork-panel" role="dialog" aria-hidden="true">
+  <aside id="artwork-panel" class="panel artwork-panel" role="dialog" aria-label="Werkdetails" aria-hidden="true">
     <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="artwork" aria-label="Schließen">×</button>
     <div class="aw-blaettern">
@@ -102,7 +104,7 @@
   </aside>
 
   <!-- Katalog: alle Werke als 2D-Übersicht -->
-  <aside id="catalog-panel" class="panel" role="dialog" aria-hidden="true">
+  <aside id="catalog-panel" class="panel" role="dialog" aria-label="Alle Werke" aria-hidden="true">
     <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="catalog" aria-label="Schließen">×</button>
     <p class="eyebrow">Alle Werke</p>
@@ -110,7 +112,7 @@
   </aside>
 
   <!-- Sammlung (Warenkorb) -->
-  <aside id="cart-panel" class="panel cart-panel" role="dialog" aria-hidden="true">
+  <aside id="cart-panel" class="panel cart-panel" role="dialog" aria-label="Ihre Sammlung" aria-hidden="true">
     <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="cart" aria-label="Schließen">×</button>
     <p class="eyebrow">Ihre Sammlung</p>
@@ -125,7 +127,7 @@
   </aside>
 
   <!-- Checkout-Modal -->
-  <div id="checkout" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="checkout" class="modal hidden" role="dialog" aria-modal="true" aria-label="Werke reservieren">
     <div class="modal-card">
       <button class="panel-close" data-close="checkout" aria-label="Schließen">×</button>
       <div id="checkout-form-view">
@@ -169,7 +171,7 @@
     <span>·</span>
     <button data-legal="kontakt">Kontakt</button>
   </div>
-  <div id="legal" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="legal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Rechtliche Hinweise">
     <div class="modal-card">
       <button class="panel-close" data-close="legal" aria-label="Schließen">×</button>
       <p class="eyebrow" id="legal-eyebrow">Impressum</p>

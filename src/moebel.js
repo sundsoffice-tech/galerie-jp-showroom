@@ -44,7 +44,8 @@ export function erstelleStrahler(scene, zielPunkt, normal, breite, registriere, 
   // kurzes Schienenstück längs der Wand
   const schiene = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.03, 0.06), schwarzMetall);
   schiene.position.set(fx, RAUM_H - 0.015, fz);
-  schiene.rotation.y = Math.atan2(normal.x, normal.z) + Math.PI / 2;
+  // Schiene läuft längs der Wand: die Box-Länge (x) wird in die Wandrichtung gedreht
+  schiene.rotation.y = Math.atan2(normal.x, normal.z);
   gruppe.add(schiene);
 
   // Strahlergehäuse, zum Werk geneigt

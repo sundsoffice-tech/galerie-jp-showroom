@@ -54,6 +54,7 @@ const szene = erstelleSzene(canvas);
 // ————— Postprocessing (nur Tier A) —————
 let composer = null;
 let qualitaet = TIER;
+let dprCap = DPR_CAP; // sinkt bei Qualitätsabstufung und bleibt dann gesenkt
 if (TIER === "A") {
   composer = new EffectComposer(szene.renderer);
   composer.renderTarget1.samples = 4;
@@ -83,6 +84,7 @@ steuerung = erstelleSteuerung({
   scene: szene.scene,
   boden: szene.boden,
   klickbare: szene.klickbare,
+  hindernisse: szene.hindernisse,
   kunstwerke: szene.kunstwerke,
   erlaubt: szene.erlaubt,
   verboten: szene.verboten,
@@ -178,11 +180,13 @@ function loop() {
   frameMittel = frameMittel * 0.985 + dt * 1000 * 0.015;
   if (frameMittel > 22 && qualitaet === "A") {
     qualitaet = "B";
+    composer?.dispose(); // Render-Targets freigeben, sonst GPU-Speicherleck
     composer = null;
     console.info("Qualität auf Stufe B reduziert (Frametime).");
   } else if (frameMittel > 26 && qualitaet === "B") {
     qualitaet = "C";
-    szene.renderer.setPixelRatio(1.25);
+    dprCap = Math.min(dprCap, 1.25); // gilt auch nach dem nächsten Resize
+    szene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
     console.info("Qualität auf Stufe C reduziert (Frametime).");
   }
 
@@ -201,7 +205,7 @@ function resize() {
   const h = window.innerHeight;
   szene.camera.aspect = w / h;
   szene.camera.updateProjectionMatrix();
-  szene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+  szene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
   szene.renderer.setSize(w, h);
   composer?.setSize(w, h);
   steuerung.wendeSheetOffsetAn();

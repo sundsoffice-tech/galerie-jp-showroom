@@ -10,6 +10,7 @@ let ctx = null;
 let master = null;
 let dry = null;
 let wet = null;
+let hall = null; // Convolver-Eingang (für Klänge, die extra Hall bekommen)
 let raumtonFilter = null;
 let raumtonGain = null;
 let gestartet = false;
@@ -50,7 +51,7 @@ export function starte() {
   dry.connect(master);
 
   // Saal-Hall: 2,2 s Rauschfahne mit hartem Abfall — großer, harter Raum
-  const hall = ctx.createConvolver();
+  hall = ctx.createConvolver();
   const dauer = 2.2;
   const rate = ctx.sampleRate;
   const impuls = ctx.createBuffer(2, dauer * rate, rate);
@@ -192,7 +193,9 @@ export function sammelKlang() {
     g.gain.linearRampToValueAtTime(0.05, t + verz + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0005, t + verz + 0.6);
     osc.connect(g);
-    g.connect(wet); // nur Hall — klingt wie aus dem Raum
+    // in den Convolver-EINGANG (wet ist dessen Ausgang — dort hinein
+    // gespeist bliebe die Glocke unverhallt und wäre zu laut)
+    g.connect(hall);
     g.connect(dry);
     osc.start(t + verz);
     osc.stop(t + verz + 0.65);

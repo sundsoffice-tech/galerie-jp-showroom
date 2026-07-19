@@ -154,10 +154,14 @@ export function erstelleSzene(canvas) {
   const sockelMat = new THREE.MeshStandardMaterial({ color: 0x24221e, roughness: 0.45, metalness: 0.1 });
   const fugeMat = new THREE.MeshBasicMaterial({ color: 0x0a0908 });
 
+  // Wände dienen zugleich als Sicht-Hindernisse für den Raycast
+  const hindernisse = [];
+
   function wandBox(material, w, h, d, x, y, z) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
     m.position.set(x, y, z);
     scene.add(m);
+    hindernisse.push(m);
     return m;
   }
 
@@ -525,6 +529,7 @@ export function erstelleSzene(canvas) {
     camera,
     boden,
     klickbare,
+    hindernisse,
     kunstwerke,
     erlaubt,
     verboten,

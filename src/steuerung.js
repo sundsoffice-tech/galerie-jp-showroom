@@ -13,7 +13,7 @@ import { raeume } from "./katalog.js";
 const B = KONFIG.besucher;
 const TAP_TOLERANZ = IST_TOUCH ? KONFIG.mobil.tapToleranzPx : 9;
 
-export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstwerke, erlaubt, verboten, callbacks }) {
+export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hindernisse = [], kunstwerke, erlaubt, verboten, callbacks }) {
   let aktiv = false;
   let fokus = null;
   let fokusStand = null;
@@ -123,22 +123,35 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
   });
 
   // ————— Tastatur —————
+  // Tippen in Formularfeldern darf die Kamera nicht bewegen ("Wanda" = WASD).
+  // ESC gehört allein der geschichteten Panel-Logik in ui.js.
+  function inEingabefeld(e) {
+    const t = e.target;
+    return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+  }
+
   window.addEventListener("keydown", (e) => {
-    if (e.repeat) return;
+    if (e.repeat || inEingabefeld(e)) return;
     tasten.add(e.code);
-    if (e.code === "Escape" && fokus) callbacks.schliessePanel();
   });
   window.addEventListener("keyup", (e) => tasten.delete(e.code));
+  // Fenster verlassen: hängende Tasten freigeben, sonst läuft die Kamera weiter
+  window.addEventListener("blur", () => tasten.clear());
 
   // ————— Raycasting —————
   function trefferUnterZeiger(cx, cy) {
     zeiger.x = (cx / window.innerWidth) * 2 - 1;
     zeiger.y = -(cy / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(zeiger, camera);
+    // Wand-Distanz zuerst: sonst wären Werke durch Wände hindurch klickbar
+    const wand = hindernisse.length ? raycaster.intersectObjects(hindernisse, false) : [];
+    const sicht = wand.length ? wand[0].distance : Infinity;
     const werke = raycaster.intersectObjects(klickbare, false);
-    if (werke.length && werke[0].distance < 14) return { typ: "werk", hit: werke[0] };
+    if (werke.length && werke[0].distance < 14 && werke[0].distance < sicht) {
+      return { typ: "werk", hit: werke[0] };
+    }
     const bodenHit = raycaster.intersectObject(boden, false);
-    if (bodenHit.length) return { typ: "boden", hit: bodenHit[0] };
+    if (bodenHit.length && bodenHit[0].distance < sicht) return { typ: "boden", hit: bodenHit[0] };
     return null;
   }
 
@@ -168,7 +181,9 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
   // ————— Fokus-Kamerafahrt (Bogen + Kontemplations-Drift) —————
   function fokussiere(werkId) {
     const e = kunstwerke.get(werkId);
-    if (!e) return;
+    // Solange das Intro die Kamera führt, keine Fokusfahrt annehmen —
+    // sie würde von der Intro-Timeline überschrieben.
+    if (!e || !aktiv) return;
 
     // Zweiter Klick auf das fokussierte Werk: Nahzoom auf die Textur
     if (fokus === werkId && !tween && fokusStand) {
@@ -270,6 +285,9 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
   }
 
   function teleportiere(index) {
+    // Ein offenes Werk-Panel würde sonst mit veraltetem Werk stehen bleiben
+    // und der Sheet-ViewOffset ohne Fokus aktiv bleiben.
+    if (fokus) callbacks.schliessePanel();
     fokusVerlassen();
     gehZiel = null;
     vel.set(0, 0);
