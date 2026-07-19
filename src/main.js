@@ -357,7 +357,7 @@ if (IM_3D) {
 // Offline-Fähigkeit der installierten App (HTML bleibt Netz-zuerst,
 // Deploys kleben also nie im Cache fest)
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
+  const registriereOffline = async () => {
     try {
       await navigator.serviceWorker.register("./sw.js");
       const reg = await navigator.serviceWorker.ready;
@@ -371,7 +371,11 @@ if ("serviceWorker" in navigator) {
     } catch {
       /* ohne Offline-Cache läuft die Galerie normal weiter */
     }
-  });
+  };
+  // Das Modul startet wegen des Laufzeit-Katalogs oft NACH dem load-Event —
+  // ein reiner load-Listener käme dann nie zum Zug
+  if (document.readyState === "complete") registriereOffline();
+  else window.addEventListener("load", registriereOffline);
 }
 
 // Debug-Zugriff für Entwicklung (window.__galerie)

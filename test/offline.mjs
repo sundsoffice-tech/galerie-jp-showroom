@@ -14,12 +14,22 @@ const fehler = [];
 seite.on("pageerror", (e) => fehler.push(e.message));
 
 // 1. Erstbesuch: Service Worker installieren, Assets in den Cache
+console.log("Lade", URL);
 await seite.goto(URL, { waitUntil: "load", timeout: 60000 });
 await seite.waitForTimeout(2500);
+// hängesicher: ready darf nie ewig blockieren, Status wird immer gemeldet
 const sw = await seite.evaluate(async () => {
   if (!("serviceWorker" in navigator)) return "nicht unterstützt";
-  const reg = await navigator.serviceWorker.ready;
-  return reg.active ? "aktiv" : "nicht aktiv";
+  const ready = navigator.serviceWorker.ready.then((r) =>
+    r.active ? "aktiv" : "registriert, nicht aktiv"
+  );
+  const timeout = new Promise((r) => setTimeout(() => r(null), 15000));
+  const ergebnis = await Promise.race([ready, timeout]);
+  if (ergebnis) return ergebnis;
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (!reg) return "keine Registrierung (Registrierungsaufruf kam nie an?)";
+  const s = reg.installing || reg.waiting || reg.active;
+  return `hängt im Zustand: ${s ? s.state : "unbekannt"}`;
 });
 console.log("Service Worker:", sw);
 await seite.waitForTimeout(4000); // Vorwärmen des Caches abwarten
