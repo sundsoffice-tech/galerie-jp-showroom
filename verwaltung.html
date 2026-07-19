@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galerie JP — Verwaltung</title>
+  <!--
+    Verwaltungs-Seite für werke.json — bewusst eine einzige, autarke Datei:
+    • funktioniert per Doppelklick (file://), ganz ohne npm/Server
+    • unter `npm run dev` lädt der Button „Aktuelle Daten laden" direkt
+    • liegt NICHT in public/ und nicht im Vite-Build → landet nie im Deploy
+    Ablauf: werke.json laden → bearbeiten → herunterladen →
+    auf GitHub src/data/werke.json ersetzen → Netlify deployt automatisch.
+  -->
+  <style>
+    :root {
+      --glass: rgba(17, 15, 12, 0.86);
+      --ivory: #ede7dc;
+      --ivory-dim: rgba(237, 231, 220, 0.55);
+      --brass: #c2a36b;
+      --brass-bright: #d8bc85;
+      --line: rgba(237, 231, 220, 0.16);
+      --sold: #9e3b32;
+      --serif: Georgia, serif;
+      --sans: system-ui, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0c0b09;
+      color: var(--ivory);
+      font-family: var(--sans);
+      font-weight: 300;
+      padding-bottom: 7rem;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      padding: 1.2rem 1.6rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .wortmarke { font-family: var(--serif); font-size: 1.2rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    .wortmarke small { color: var(--ivory-dim); letter-spacing: 0.2em; font-size: 0.6em; margin-left: 0.7rem; }
+    #status {
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      color: var(--ivory-dim);
+    }
+    #status.geaendert { color: var(--brass-bright); border-color: var(--brass); }
+    main { max-width: 62rem; margin: 0 auto; padding: 1.6rem; display: grid; gap: 2rem; }
+    h2 {
+      font-size: 0.7rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--brass);
+      font-weight: 500;
+      margin-bottom: 0.9rem;
+    }
+    section { border: 1px solid var(--line); padding: 1.4rem; background: rgba(255, 252, 244, 0.015); }
+    .hinweis { font-size: 0.75rem; color: var(--ivory-dim); line-height: 1.6; }
+    button {
+      font-family: var(--sans);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ivory);
+      padding: 0.6rem 1.1rem;
+      transition: border-color 0.2s ease;
+    }
+    button:hover { border-color: var(--brass); }
+    button.primaer {
+      background: linear-gradient(120deg, var(--brass), var(--brass-bright));
+      color: #14110c;
+      border: none;
+    }
+    button.gefahr:hover { border-color: var(--sold); color: #d3867c; }
+    input, select, textarea {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--ivory);
+      background: rgba(237, 231, 220, 0.05);
+      border: 1px solid var(--line);
+      padding: 0.55rem 0.75rem;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--brass); outline: none; }
+    label { display: grid; gap: 0.3rem; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ivory-dim); }
+    label.zeile { display: flex; align-items: center; gap: 0.6rem; }
+    label.zeile input { width: auto; }
+
+    /* Laden */
+    #dropzone {
+      border: 1px dashed rgba(237, 231, 220, 0.35);
+      padding: 2.2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    #dropzone.dragover { border-color: var(--brass); background: rgba(194, 163, 107, 0.06); }
+    #dropzone p { font-family: var(--serif); font-style: italic; color: var(--ivory-dim); }
+    #laden-leiste { display: flex; gap: 0.8rem; margin-top: 0.9rem; flex-wrap: wrap; }
+    #fehler { color: #d3867c; font-size: 0.8rem; margin-top: 0.8rem; }
+
+    /* Stammdaten */
+    .felder { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.9rem; }
+
+    /* Säle */
+    .saal-zeile {
+      display: grid;
+      grid-template-columns: 6rem 1fr 2fr auto auto;
+      gap: 0.7rem;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .saal-zeile:last-child { border-bottom: none; }
+    .kapazitaet { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--ivory-dim); white-space: nowrap; }
+    .kapazitaet.voll { color: #d3867c; }
+
+    /* Werke */
+    #werk-toolbar { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    #werk-toolbar select, #werk-toolbar input { width: auto; flex: 1; min-width: 9rem; }
+    .werk-karte {
+      display: grid;
+      grid-template-columns: 3.4rem 1fr auto auto;
+      gap: 0.9rem;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .werk-karte:last-child { border-bottom: none; }
+    .werk-thumb {
+      width: 3.4rem;
+      height: 3.4rem;
+      background: #211d17;
+      display: grid;
+      place-items: center;
+      color: var(--ivory-dim);
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .werk-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .werk-titel { font-family: var(--serif); font-size: 1.02rem; }
+    .werk-sub { font-size: 0.72rem; color: var(--ivory-dim); margin-top: 0.15rem; }
+    .badge {
+      font-size: 0.56rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--brass);
+      color: var(--brass-bright);
+      white-space: nowrap;
+    }
+    .badge.verkauft { border-color: var(--sold); color: #d3867c; }
+    .werk-aktionen { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+    .werk-aktionen button { padding: 0.4rem 0.7rem; font-size: 0.56rem; }
+
+    /* Editor-Dialog */
+    dialog {
+      background: var(--glass);
+      color: var(--ivory);
+      border: 1px solid var(--line);
+      padding: 1.8rem;
+      width: min(34rem, 92vw);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    dialog::backdrop { background: rgba(5, 4, 3, 0.7); }
+    #editor-form { display: grid; gap: 0.9rem; }
+    .form-reihe { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    #editor-fehler { color: #d3867c; font-size: 0.8rem; }
+    #editor-fehler li { margin-left: 1rem; }
+    .dialog-leiste { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 0.6rem; }
+    #ratio-vorschau { font-size: 0.7rem; color: var(--ivory-dim); }
+
+    /* Fußleiste */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line);
+      padding: 0.9rem 1.6rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    footer .hinweis { flex: 1; min-width: 16rem; }
+    details { font-size: 0.75rem; }
+    details pre {
+      max-height: 14rem;
+      overflow: auto;
+      background: #14110c;
+      border: 1px solid var(--line);
+      padding: 0.8rem;
+      margin-top: 0.5rem;
+      font-size: 0.68rem;
+    }
+    .verborgen { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wortmarke">Galerie JP<small>Verwaltung</small></div>
+    <div id="status">Keine Daten geladen</div>
+  </header>
+
+  <main>
+    <section id="laden">
+      <h2>1 · Daten laden</h2>
+      <div id="dropzone">
+        <p>werke.json hierher ziehen — oder klicken zum Auswählen</p>
+        <input type="file" id="datei" accept=".json,application/json" class="verborgen" />
+      </div>
+      <div id="laden-leiste">
+        <button id="dev-laden" class="verborgen">Aktuelle Daten laden (Dev-Server)</button>
+      </div>
+      <p id="fehler" class="verborgen"></p>
+    </section>
+
+    <section id="galerie-sektion" class="verborgen">
+      <h2>2 · Galerie-Stammdaten</h2>
+      <div class="felder">
+        <label>Name<input id="g-name" /></label>
+        <label>Währung
+          <select id="g-waehrung">
+            <option>EUR</option><option>CHF</option><option>USD</option>
+          </select>
+        </label>
+        <label>Kontakt-E-Mail<input id="g-email" type="email" placeholder="galerie@beispiel.de" /></label>
+        <label>Web3Forms-Key (Reservierungs-Mails)
+          <input id="g-web3" placeholder="leer = Demo-Modus · Key von web3forms.com" />
+        </label>
+      </div>
+    </section>
+
+    <section id="saele-sektion" class="verborgen">
+      <h2>3 · Säle</h2>
+      <div id="saal-liste"></div>
+      <p class="hinweis" style="margin-top:0.8rem">
+        Plätze pro Saal: 6 an den Längswänden, +2 an der Stirnwand im ersten und letzten Saal.
+        Überzählige Werke werden im Showroom nicht gehängt.
+      </p>
+    </section>
+
+    <section id="werke-sektion" class="verborgen">
+      <h2>4 · Werke</h2>
+      <div id="werk-toolbar">
+        <select id="filter-saal"><option value="">Alle Säle</option></select>
+        <input id="suche" placeholder="Suchen: Titel oder Künstler …" />
+        <button id="werk-neu" class="primaer">+ Neues Werk</button>
+      </div>
+      <div id="werk-liste"></div>
+    </section>
+  </main>
+
+  <dialog id="werk-editor">
+    <h2 id="editor-titel">Werk bearbeiten</h2>
+    <form id="editor-form" method="dialog">
+      <div class="form-reihe">
+        <label>ID<input id="e-id" readonly /></label>
+        <label>Saal<select id="e-raum"></select></label>
+      </div>
+      <label>Titel<input id="e-titel" /></label>
+      <div class="form-reihe">
+        <label>Künstler<input id="e-kuenstler" /></label>
+        <label>Jahr<input id="e-jahr" type="number" min="1000" max="2100" /></label>
+      </div>
+      <label>Technik<input id="e-technik" placeholder="z. B. Öl auf Leinwand" /></label>
+      <div class="form-reihe">
+        <label>Breite (cm)<input id="e-breite" type="number" min="1" /></label>
+        <label>Höhe (cm)<input id="e-hoehe" type="number" min="1" /></label>
+      </div>
+      <p id="ratio-vorschau"></p>
+      <div class="form-reihe">
+        <label>Preis (€)<input id="e-preis" type="number" min="0" step="100" /></label>
+        <label>Bilddatei<input id="e-bild" placeholder="w-013.jpg · leer = Platzhalter" /></label>
+      </div>
+      <p class="hinweis">Foto vor dem Deploy nach <b>public/werke/</b> legen; leer = automatischer Platzhalter.</p>
+      <label>Stripe Payment Link (optional)<input id="e-stripe" placeholder="https://buy.stripe.com/… · auf 1 Zahlung limitieren!" /></label>
+      <label class="zeile"><input id="e-verkauft" type="checkbox" />Verkauft</label>
+      <label>Beschreibung (Saaltext)<textarea id="e-beschreibung" rows="3"></textarea></label>
+      <ul id="editor-fehler"></ul>
+      <div class="dialog-leiste">
+        <button type="button" id="editor-abbrechen">Abbrechen</button>
+        <button type="button" id="editor-ok" class="primaer">Übernehmen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer>
+    <button id="download" class="primaer" disabled>werke.json herunterladen</button>
+    <details>
+      <summary>JSON-Vorschau</summary>
+      <pre id="json-vorschau"></pre>
+    </details>
+    <p class="hinweis">
+      1. Herunterladen → 2. auf GitHub <b>src/data/werke.json</b> ersetzen („Add file → Upload files")
+      → 3. Netlify deployt automatisch (~1 Min.). Neue Fotos analog nach <b>public/werke/</b>.
+    </p>
+  </footer>
+
+  <script>
+    "use strict";
+    let daten = null; // { galerie, raeume, werke } — Arbeitskopie
+    let geaendert = false;
+    let editIndex = -1; // -1 = neues Werk
+
+    const $ = (id) => document.getElementById(id);
+
+    // ————— Status —————
+    function setzeStatus() {
+      const s = $("status");
+      if (!daten) { s.textContent = "Keine Daten geladen"; s.classList.remove("geaendert"); return; }
+      s.textContent = `${daten.werke.length} Werke · ${daten.raeume.length} Säle` +
+        (geaendert ? " · ungespeicherte Änderungen" : "");
+      s.classList.toggle("geaendert", geaendert);
+      $("download").disabled = false;
+      $("json-vorschau").textContent = JSON.stringify(daten, null, 2);
+    }
+
+    function markiereGeaendert() { geaendert = true; setzeStatus(); }
+
+    window.addEventListener("beforeunload", (e) => {
+      if (geaendert) { e.preventDefault(); e.returnValue = ""; }
+    });
+
+    // ————— Laden —————
+    function zeigeFehler(text) {
+      const f = $("fehler");
+      f.textContent = text;
+      f.classList.toggle("verborgen", !text);
+    }
+
+    function ladeDatei(file) {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const d = JSON.parse(r.result);
+          if (!d.galerie || !Array.isArray(d.raeume) || !Array.isArray(d.werke))
+            throw new Error("Struktur unvollständig (galerie / raeume / werke fehlen)");
+          daten = d;
+          geaendert = false;
+          zeigeFehler("");
+          renderAlles();
+        } catch (err) {
+          zeigeFehler("Keine gültige werke.json: " + err.message);
+        }
+      };
+      r.readAsText(file);
+    }
+
+    const dz = $("dropzone");
+    dz.addEventListener("click", () => $("datei").click());
+    $("datei").addEventListener("change", (e) => e.target.files[0] && ladeDatei(e.target.files[0]));
+    dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("dragover"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dz.classList.remove("dragover");
+      if (e.dataTransfer.files[0]) ladeDatei(e.dataTransfer.files[0]);
+    });
+
+    if (location.protocol !== "file:") {
+      $("dev-laden").classList.remove("verborgen");
+      $("dev-laden").addEventListener("click", async () => {
+        try {
+          const res = await fetch("/src/data/werke.json");
+          const d = await res.json();
+          daten = d;
+          geaendert = false;
+          zeigeFehler("");
+          renderAlles();
+        } catch {
+          zeigeFehler("Konnte /src/data/werke.json nicht laden — läuft der Dev-Server?");
+        }
+      });
+    }
+
+    // ————— Rendern —————
+    function renderAlles() {
+      ["galerie-sektion", "saele-sektion", "werke-sektion"].forEach((id) =>
+        $(id).classList.remove("verborgen"));
+      $("g-name").value = daten.galerie.name || "";
+      $("g-waehrung").value = daten.galerie.waehrung || "EUR";
+      $("g-email").value = daten.galerie.email || "";
+      $("g-web3").value = daten.galerie.web3formsKey || "";
+      renderSaele();
+      renderWerke();
+      setzeStatus();
+    }
+
+    [["g-name","name"],["g-waehrung","waehrung"],["g-email","email"],["g-web3","web3formsKey"]]
+      .forEach(([id, feld]) => {
+        $(id).addEventListener("input", () => {
+          daten.galerie[feld] = $(id).value;
+          markiereGeaendert();
+        });
+      });
+
+    function kapazitaet(raumIndex) {
+      const laengs = 6;
+      const stirn = (raumIndex === 0 || raumIndex === daten.raeume.length - 1) ? 2 : 0;
+      return laengs + stirn;
+    }
+
+    function renderSaele() {
+      const wrap = $("saal-liste");
+      wrap.innerHTML = "";
+      daten.raeume.forEach((raum, i) => {
+        const belegt = daten.werke.filter((w) => w.raum === raum.id).length;
+        const kap = kapazitaet(i);
+        const zeile = document.createElement("div");
+        zeile.className = "saal-zeile";
+        zeile.innerHTML = `
+          <input value="${raum.saal || ""}" data-feld="saal" aria-label="Saal-Nummer" />
+          <input value="${raum.name || ""}" data-feld="name" aria-label="Saal-Name" />
+          <input value="${raum.beschreibung || ""}" data-feld="beschreibung" aria-label="Beschreibung" />
+          <span class="kapazitaet ${belegt > kap ? "voll" : ""}">${belegt} / ${kap} Plätzen${belegt > kap ? ` · ${belegt - kap} ungehängt!` : ""}</span>
+        `;
+        const del = document.createElement("button");
+        del.className = "gefahr";
+        del.textContent = "Löschen";
+        del.addEventListener("click", () => {
+          if (belegt > 0) { alert(`„${raum.name}" enthält noch ${belegt} Werk(e) — erst verschieben oder löschen.`); return; }
+          if (!confirm(`Saal „${raum.name}" löschen?`)) return;
+          daten.raeume.splice(i, 1);
+          markiereGeaendert();
+          renderSaele();
+          renderWerke();
+        });
+        zeile.appendChild(del);
+        zeile.querySelectorAll("input").forEach((inp) =>
+          inp.addEventListener("input", () => {
+            raum[inp.dataset.feld] = inp.value;
+            markiereGeaendert();
+          }));
+        wrap.appendChild(zeile);
+      });
+      const neu = document.createElement("button");
+      neu.textContent = "+ Saal";
+      neu.style.marginTop = "0.8rem";
+      neu.addEventListener("click", () => {
+        const name = prompt("Name des neuen Saals:");
+        if (!name) return;
+        const id = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "saal";
+        if (daten.raeume.some((r) => r.id === id)) { alert("Saal-ID existiert bereits."); return; }
+        const roemisch = ["I","II","III","IV","V","VI","VII","VIII"][daten.raeume.length] || (daten.raeume.length + 1);
+        daten.raeume.push({ id, name, saal: `Saal ${roemisch}`, beschreibung: "" });
+        markiereGeaendert();
+        renderSaele();
+        renderWerke();
+      });
+      wrap.appendChild(neu);
+    }
+
+    $("filter-saal").addEventListener("change", renderWerke);
+    $("suche").addEventListener("input", renderWerke);
+
+    function renderWerke() {
+      const filter = $("filter-saal");
+      const vorher = filter.value;
+      filter.innerHTML = '<option value="">Alle Säle</option>' +
+        daten.raeume.map((r) => `<option value="${r.id}">${r.name}</option>`).join("");
+      filter.value = vorher;
+
+      const suchwort = $("suche").value.trim().toLowerCase();
+      const liste = $("werk-liste");
+      liste.innerHTML = "";
+      daten.werke
+        .filter((w) => !filter.value || w.raum === filter.value)
+        .filter((w) => !suchwort ||
+          (w.titel + " " + w.kuenstler).toLowerCase().includes(suchwort))
+        .forEach((werk) => {
+          const idx = daten.werke.indexOf(werk);
+          const karte = document.createElement("div");
+          karte.className = "werk-karte";
+          const raum = daten.raeume.find((r) => r.id === werk.raum);
+          const preis = new Intl.NumberFormat("de-DE", { style: "currency", currency: daten.galerie.waehrung || "EUR", maximumFractionDigits: 0 }).format(werk.preis || 0);
+          karte.innerHTML = `
+            <div class="werk-thumb">${werk.bild ? `<img alt="" />` : "Platz-<br>halter"}</div>
+            <div>
+              <div class="werk-titel">${werk.titel}</div>
+              <div class="werk-sub">${werk.kuenstler}, ${werk.jahr} · ${raum ? raum.name : "?"} · ${werk.breite_cm}×${werk.hoehe_cm} cm · ${preis}</div>
+            </div>
+            <span class="badge ${werk.verkauft ? "verkauft" : ""}">${werk.verkauft ? "Verkauft" : "Verfügbar"}</span>
+          `;
+          // Thumbnail: unter dem Dev-Server aus public/werke laden, sonst Grau
+          const thumb = karte.querySelector(".werk-thumb img");
+          if (thumb) {
+            if (location.protocol === "file:") thumb.remove();
+            else thumb.src = `/werke/${werk.bild}`;
+          }
+          const aktionen = document.createElement("div");
+          aktionen.className = "werk-aktionen";
+          const bearb = document.createElement("button");
+          bearb.textContent = "Bearbeiten";
+          bearb.addEventListener("click", () => oeffneEditor(idx));
+          const dup = document.createElement("button");
+          dup.textContent = "Duplizieren";
+          dup.addEventListener("click", () => {
+            const kopie = { ...werk, id: neueWerkId(), titel: werk.titel + " (Kopie)", verkauft: false };
+            daten.werke.push(kopie);
+            markiereGeaendert();
+            renderWerke();
+            renderSaele();
+          });
+          const del = document.createElement("button");
+          del.className = "gefahr";
+          del.textContent = "Löschen";
+          del.addEventListener("click", () => {
+            if (!confirm(`„${werk.titel}" wirklich löschen?`)) return;
+            daten.werke.splice(idx, 1);
+            markiereGeaendert();
+            renderWerke();
+            renderSaele();
+          });
+          aktionen.append(bearb, dup, del);
+          karte.appendChild(aktionen);
+          liste.appendChild(karte);
+        });
+    }
+
+    // ————— Editor —————
+    function neueWerkId() {
+      const max = daten.werke.reduce((m, w) => {
+        const n = /^w-(\d+)$/.exec(w.id);
+        return n ? Math.max(m, +n[1]) : m;
+      }, 0);
+      return "w-" + String(max + 1).padStart(3, "0");
+    }
+
+    const dialog = $("werk-editor");
+
+    function oeffneEditor(index) {
+      editIndex = index;
+      const werk = index >= 0 ? daten.werke[index] : {
+        id: neueWerkId(), raum: daten.raeume[0]?.id || "", titel: "", kuenstler: "",
+        jahr: new Date().getFullYear(), technik: "", breite_cm: 100, hoehe_cm: 80,
+        preis: 0, bild: null, verkauft: false, beschreibung: "",
+      };
+      $("editor-titel").textContent = index >= 0 ? "Werk bearbeiten" : "Neues Werk";
+      $("e-raum").innerHTML = daten.raeume.map((r) => `<option value="${r.id}">${r.name}</option>`).join("");
+      $("e-id").value = werk.id;
+      $("e-raum").value = werk.raum;
+      $("e-titel").value = werk.titel;
+      $("e-kuenstler").value = werk.kuenstler;
+      $("e-jahr").value = werk.jahr;
+      $("e-technik").value = werk.technik;
+      $("e-breite").value = werk.breite_cm;
+      $("e-hoehe").value = werk.hoehe_cm;
+      $("e-preis").value = werk.preis;
+      $("e-bild").value = werk.bild || "";
+      $("e-stripe").value = werk.stripeLink || "";
+      $("e-verkauft").checked = !!werk.verkauft;
+      $("e-beschreibung").value = werk.beschreibung || "";
+      $("editor-fehler").innerHTML = "";
+      ratioVorschau();
+      dialog.showModal();
+    }
+
+    function ratioVorschau() {
+      const b = +$("e-breite").value;
+      const h = +$("e-hoehe").value;
+      $("ratio-vorschau").textContent = b > 0 && h > 0
+        ? `Seitenverhältnis ${(b / h).toFixed(2)} — ${b > h ? "Querformat" : b < h ? "Hochformat" : "quadratisch"}; bestimmt die reale Größe an der Wand.`
+        : "";
+    }
+    $("e-breite").addEventListener("input", ratioVorschau);
+    $("e-hoehe").addEventListener("input", ratioVorschau);
+
+    function pruefeWerk(w) {
+      const f = [];
+      if (!w.titel.trim()) f.push("Titel fehlt.");
+      if (!w.kuenstler.trim()) f.push("Künstler fehlt.");
+      if (!daten.raeume.some((r) => r.id === w.raum)) f.push("Unbekannter Saal.");
+      if (!(w.preis > 0)) f.push("Preis muss größer 0 sein.");
+      if (!(w.breite_cm > 0 && w.hoehe_cm > 0)) f.push("Maße müssen größer 0 sein.");
+      if (daten.werke.some((x, i) => x.id === w.id && i !== editIndex)) f.push("ID doppelt vergeben.");
+      if (w.stripeLink && !/^https:\/\/buy\.stripe\.com\//.test(w.stripeLink))
+        f.push("Stripe-Link muss mit https://buy.stripe.com/ beginnen.");
+      return f;
+    }
+
+    $("editor-ok").addEventListener("click", () => {
+      const werk = {
+        id: $("e-id").value,
+        raum: $("e-raum").value,
+        titel: $("e-titel").value,
+        kuenstler: $("e-kuenstler").value,
+        jahr: +$("e-jahr").value || new Date().getFullYear(),
+        technik: $("e-technik").value,
+        breite_cm: +$("e-breite").value,
+        hoehe_cm: +$("e-hoehe").value,
+        preis: +$("e-preis").value,
+        bild: $("e-bild").value.trim() || null,
+        verkauft: $("e-verkauft").checked,
+        beschreibung: $("e-beschreibung").value,
+      };
+      const stripe = $("e-stripe").value.trim();
+      if (stripe) werk.stripeLink = stripe;
+      const fehler = pruefeWerk(werk);
+      if (fehler.length) {
+        $("editor-fehler").innerHTML = fehler.map((f) => `<li>${f}</li>`).join("");
+        return;
+      }
+      if (editIndex >= 0) daten.werke[editIndex] = werk;
+      else daten.werke.push(werk);
+      markiereGeaendert();
+      dialog.close();
+      renderWerke();
+      renderSaele();
+    });
+
+    $("editor-abbrechen").addEventListener("click", () => dialog.close());
+    $("werk-neu").addEventListener("click", () => oeffneEditor(-1));
+
+    // ————— Download —————
+    $("download").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(daten, null, 2) + "\n"], { type: "application/json" });
+      const a = Object.assign(document.createElement("a"), {
+        href: URL.createObjectURL(blob),
+        download: "werke.json",
+      });
+      a.click();
+      URL.revokeObjectURL(a.href);
+      geaendert = false;
+      setzeStatus();
+    });
+  </script>
+</body>
+</html>

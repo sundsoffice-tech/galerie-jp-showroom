@@ -453,6 +453,23 @@ html.touch .hint-touch { display: inline; }
   background: var(--sold);
 }
 
+.btn-stripe {
+  margin-top: 0.7rem;
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass-bright);
+  background: transparent;
+  border: 1px solid var(--brass);
+  padding: 0.85rem 2rem;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+.btn-stripe:hover { background: rgba(194, 163, 107, 0.1); }
+
 .aw-trust {
   margin-top: 1.8rem;
   list-style: none;
@@ -597,6 +614,20 @@ html.touch .hint-touch { display: inline; }
 }
 #checkout-form input:focus,
 #checkout-form textarea:focus { border-color: var(--brass); outline: none; }
+
+.botcheck {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+.checkout-error {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: #d3867c;
+  border: 1px solid rgba(158, 59, 50, 0.5);
+  padding: 0.7rem 0.9rem;
+}
 
 .success-schritte {
   margin: 1rem 0 0 1.1rem;

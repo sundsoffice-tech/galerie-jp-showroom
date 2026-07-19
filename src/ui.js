@@ -2,7 +2,7 @@
 // Saal-Blende mit Caption, Touch-Joystick und Stummschalter.
 // Jedes Werk ist ein Unikat: nur einmal sammelbar, nach Verkauf gesperrt.
 
-import { raeume, raumById, werkById, formatPreis, bildThumbnail } from "./katalog.js";
+import { raeume, raumById, werkById, formatPreis, bildThumbnail, galerie } from "./katalog.js";
 import * as klang from "./klang.js";
 import { machBottomSheet } from "./bottomsheet.js";
 import { IST_TOUCH } from "./geraet.js";
@@ -162,6 +162,15 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       btn.disabled = drin;
       btn.textContent = drin ? "In Ihrer Sammlung" : "In die Sammlung";
     }
+    // Stripe Payment Link (Stufe B): Sofortkauf, wenn ein Link gepflegt ist.
+    // Der Link ist im Stripe-Dashboard auf 1 Zahlung limitiert (Unikat-Schutz).
+    const stripeBtn = $("aw-stripe");
+    if (werk.stripeLink && !werk.verkauft) {
+      stripeBtn.classList.remove("hidden");
+      stripeBtn.onclick = () => window.open(werk.stripeLink, "_blank", "noopener");
+    } else {
+      stripeBtn.classList.add("hidden");
+    }
   }
 
   $("aw-add").addEventListener("click", () => {
@@ -274,10 +283,76 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     checkout.classList.remove("hidden");
   });
 
-  $("checkout-form").addEventListener("submit", (e) => {
+  // Reservierung per E-Mail an die Galerie — serverlos über Web3Forms.
+  // Leerer web3formsKey in werke.json = Demo-Modus (keine Mail, gleiche UI).
+  const RESERVIERUNG_ENDPOINT = "https://api.web3forms.com/submit";
+
+  function reservierungsText() {
+    return sammlung
+      .map((id) => {
+        const w = werkById(id);
+        return `• ${w.titel} — ${w.kuenstler} (${w.id}) · ${formatPreis(w.preis)}`;
+      })
+      .join("\n");
+  }
+
+  function zeigeCheckoutFehler(text) {
+    const el = $("checkout-error");
+    el.textContent = text;
+    el.classList.remove("hidden");
+  }
+
+  $("checkout-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    // >>> Hier wird später Stripe Checkout / Web3Forms eingebunden. <<<
-    // Demo: Werke als verkauft markieren und Bestätigung zeigen.
+    const form = e.currentTarget; // vor dem await greifen
+    const btn = form.querySelector('button[type="submit"]');
+    $("checkout-error").classList.add("hidden");
+
+    const felder = Object.fromEntries(new FormData(form));
+    if (felder.botcheck) return; // Honeypot: Bots stumm verwerfen
+
+    const key = (galerie.web3formsKey || "").trim();
+    if (key) {
+      btn.disabled = true;
+      const alterText = btn.textContent;
+      btn.textContent = "Wird übermittelt …";
+      try {
+        const res = await fetch(RESERVIERUNG_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            access_key: key,
+            subject: `Reservierung: ${sammlung.length} Werk(e), ${formatPreis(summe())} — ${felder.name}`,
+            from_name: `${galerie.name} — Virtueller Showroom`,
+            name: felder.name,
+            email: felder.email,
+            telefon: felder.phone || "nicht angegeben",
+            nachricht: felder.nachricht || "—",
+            werke: reservierungsText(),
+            gesamtsumme: formatPreis(summe()),
+            replyto: felder.email, // die Galerie antwortet direkt dem Kunden
+            botcheck: "",
+          }),
+        });
+        // Web3Forms liefert auch bei Problemen HTTP 200 mit { success:false }
+        const daten = await res.json().catch(() => ({}));
+        if (!(res.ok && daten.success)) throw new Error(daten.message || `HTTP ${res.status}`);
+      } catch (fehler) {
+        console.error("Reservierung fehlgeschlagen:", fehler);
+        zeigeCheckoutFehler(
+          "Die Reservierung konnte nicht übermittelt werden. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut — oder kontaktieren Sie die Galerie direkt."
+        );
+        btn.disabled = false;
+        btn.textContent = alterText;
+        return; // Sammlung + Eingaben bleiben erhalten
+      }
+      btn.disabled = false;
+      btn.textContent = alterText;
+    } else {
+      console.info("Demo-Modus: galerie.web3formsKey ist leer — keine E-Mail versendet.");
+    }
+
+    // Erfolg (oder Demo): Werke lokal als reserviert markieren, Bestätigung zeigen
     const verkaufte = ladeVerkaufte();
     sammlung.forEach((id) => {
       werkById(id).verkauft = true;
@@ -289,6 +364,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     speichereSammlung();
     renderSammlung();
     aktualisiereKaufButton();
+    form.reset();
     $("checkout-form-view").classList.add("hidden");
     $("checkout-success-view").classList.remove("hidden");
   });

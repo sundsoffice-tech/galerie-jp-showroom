@@ -1,7 +1,9 @@
 {
   "galerie": {
     "name": "Galerie JP",
-    "waehrung": "EUR"
+    "waehrung": "EUR",
+    "email": "",
+    "web3formsKey": ""
   },
   "raeume": [
     {

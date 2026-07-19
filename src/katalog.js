@@ -40,7 +40,8 @@ const bildCache = new Map();
 
 // Liefert für jedes Werk ein Canvas (Platzhalter) oder eine URL (echtes Foto).
 export function bildQuelle(werk) {
-  if (werk.bild) return { typ: "url", wert: `/werke/${werk.bild}` };
+  // relativer Pfad: funktioniert auch unter einem Unterpfad (GitHub Pages)
+  if (werk.bild) return { typ: "url", wert: `werke/${werk.bild}` };
   if (!bildCache.has(werk.id)) {
     bildCache.set(werk.id, platzhalterCanvas(werk));
   }

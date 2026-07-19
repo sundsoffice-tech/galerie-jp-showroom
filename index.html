@@ -4,11 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Galerie JP — Virtueller Showroom</title>
-  <meta name="description" content="Begehbarer 3D-Showroom — ausgewählte Unikate aus Malerei, Abstraktion und Fotografie, direkt erwerbbar." />
+  <meta name="description" content="Der virtuelle Showroom der Galerie JP: Drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar. Begehbar in 3D." />
   <meta name="theme-color" content="#0c0b09" />
-  <meta property="og:title" content="Galerie JP — Virtueller Showroom" />
-  <meta property="og:description" content="Drei Säle, ausgewählte Unikate — ein begehbarer Galerie-Rundgang im Browser." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230c0b09'/%3E%3Crect x='5' y='5' width='54' height='54' fill='none' stroke='%23c2a36b' stroke-width='2'/%3E%3Ctext x='32' y='45' font-family='Georgia, serif' font-size='34' fill='%23c2a36b' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E" />
+  <!-- Open Graph: og:image/og:url nach Go-Live auf die echte Domain ändern -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Galerie JP" />
+  <meta property="og:title" content="Galerie JP — Virtueller Showroom" />
+  <meta property="og:description" content="Drei Säle. Ausgewählte Werke. Direkt erwerbbar. Ein begehbarer 3D-Showroom." />
+  <meta property="og:locale" content="de_DE" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Archivo:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -75,6 +80,7 @@
       <span class="aw-price" id="aw-price"></span>
       <button id="aw-add" class="btn-brass">In die Sammlung</button>
     </div>
+    <button id="aw-stripe" class="btn-stripe hidden">Sofort erwerben</button>
     <p class="aw-sold hidden" id="aw-sold"><span class="dot"></span>Verkauft</p>
     <ul class="aw-trust">
       <li>Signiertes Echtheitszertifikat</li>
@@ -107,6 +113,7 @@
         <h2 class="modal-title">Ihre Angaben</h2>
         <div id="checkout-items"></div>
         <form id="checkout-form">
+          <input type="checkbox" name="botcheck" class="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" />
           <label>Name<input type="text" name="name" required autocomplete="name" /></label>
           <label>E-Mail<input type="email" name="email" required autocomplete="email" /></label>
           <label>Telefon (optional)<input type="tel" name="phone" autocomplete="tel" /></label>
@@ -115,8 +122,9 @@
           <div class="cart-total-row">
             <span>Gesamt</span><span id="checkout-total">0 €</span>
           </div>
+          <p id="checkout-error" class="checkout-error hidden" role="alert"></p>
           <button type="submit" class="btn-brass">Unverbindlich reservieren</button>
-          <p class="cart-note">Keine Zahlung erforderlich — die Galerie meldet sich innerhalb eines Werktags persönlich bei Ihnen.</p>
+          <p class="cart-note">Keine Zahlung erforderlich — mit dem Absenden reservieren Sie die Werke unverbindlich. Die Galerie meldet sich innerhalb eines Werktags persönlich zur Abwicklung von Zahlung und Übergabe.</p>
         </form>
       </div>
       <div id="checkout-success-view" class="hidden">
@@ -134,6 +142,21 @@
   </div>
 
   <div id="vignette"></div>
+
+  <!-- Indexierbarer Textkörper für Crawler (das Canvas ist für sie unsichtbar) -->
+  <noscript>
+    <h1>Galerie JP — Virtueller Showroom</h1>
+    <p>Drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar. Für den begehbaren 3D-Rundgang wird JavaScript benötigt.</p>
+  </noscript>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ArtGallery",
+      "name": "Galerie JP",
+      "description": "Virtueller, begehbarer Showroom: drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar."
+    }
+  </script>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -26,6 +26,18 @@ werke.forEach((w) => {
   if (verkaufteIds.includes(w.id)) w.verkauft = true;
 });
 
+// Rückkehr von einem Stripe Payment Link (?erworben=w-005):
+// das Werk sofort lokal als verkauft markieren
+const erworben = new URLSearchParams(location.search).get("erworben");
+if (erworben && werke.some((w) => w.id === erworben)) {
+  const w = werke.find((x) => x.id === erworben);
+  w.verkauft = true;
+  if (!verkaufteIds.includes(erworben)) {
+    verkaufteIds.push(erworben);
+    localStorage.setItem("galerie-jp-verkauft", JSON.stringify(verkaufteIds));
+  }
+}
+
 // Marken-Serife auch für Canvas-Beschriftung im 3D-Raum laden
 try {
   await Promise.race([
