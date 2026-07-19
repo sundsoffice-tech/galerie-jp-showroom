@@ -55,7 +55,9 @@ export function erstelleSzene(canvas) {
     canvas,
     // Desktop (Tier A) bekommt MSAA über den EffectComposer; Touch nur auf Low-DPI
     antialias: TIER === "A" ? false : window.devicePixelRatio < 2,
-    powerPreference: "high-performance",
+    // Auf Mobilgeräten kann die High-Performance-Anforderung im Energiespar-
+    // modus die Kontext-Erstellung scheitern lassen — dort dem Gerät überlassen
+    powerPreference: IST_TOUCH ? "default" : "high-performance",
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
   renderer.setSize(window.innerWidth, window.innerHeight);

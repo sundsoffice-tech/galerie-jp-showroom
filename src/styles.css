@@ -127,16 +127,6 @@ textarea:focus-visible {
   margin-bottom: 2.6rem;
 }
 
-.intro-fehler {
-  max-width: 28rem;
-  margin: 0 auto;
-  font-size: 0.85rem;
-  line-height: 1.7;
-  color: var(--ivory-dim);
-  border: 1px solid rgba(158, 59, 50, 0.5);
-  padding: 1rem 1.2rem;
-}
-
 .intro-hints {
   margin-top: 2.4rem;
   font-size: 0.72rem;
@@ -781,6 +771,23 @@ html.touch .hint-touch { display: inline; }
 }
 .legal-links button:hover { color: var(--ivory); }
 html.touch .legal-links { display: none; } /* mobil: Platz für den Joystick */
+
+/* ————— Katalog-Modus (kein 3D verfügbar) —————
+   Warmer, stiller Hintergrund statt der Szene — gleiche Marke,
+   gleiche Kaufwege, kein Technik-Hinweis. */
+
+html.modus-2d #scene { display: none; }
+html.modus-2d #room-nav,
+html.modus-2d #mute,
+html.modus-2d #joystick { display: none !important; }
+html.modus-2d body {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(194, 163, 107, 0.14), transparent 55%),
+    radial-gradient(ellipse 140% 100% at 50% 115%, rgba(120, 90, 50, 0.1), transparent 60%),
+    #0b0a08;
+}
+/* Panels dürfen den vollen Platz nutzen, es liegt keine Szene dahinter */
+html.modus-2d .panel { width: min(30rem, 96vw); }
 
 /* ————— Utility ————— */
 

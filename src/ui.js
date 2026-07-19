@@ -211,7 +211,10 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     const liste = werkeImRaum(werk.raum);
     const i = liste.findIndex((w) => w.id === offenesWerk);
     const ziel = liste[(i + richtung + liste.length) % liste.length];
-    if (ziel && ziel.id !== offenesWerk) steuerungRef().fokussiere(ziel.id);
+    if (ziel && ziel.id !== offenesWerk) {
+      // ohne Kamerafahrt (Katalog-Modus/ungehängt): Panel blättert trotzdem
+      if (!steuerungRef().fokussiere(ziel.id)) oeffneWerk(ziel.id);
+    }
   }
   $("aw-prev").addEventListener("click", () => blaettere(-1));
   $("aw-next").addEventListener("click", () => blaettere(1));

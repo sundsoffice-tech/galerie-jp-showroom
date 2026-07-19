@@ -8,10 +8,16 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { KONFIG } from "./konfig.js";
 
 export function erstelleBeleuchtung(scene, renderer, raeume, raumZentrumX) {
-  // PBR-Environment: Messing, Parkett und Glas bekommen echte Reflexe
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.25;
+  // PBR-Environment: Messing, Parkett und Glas bekommen echte Reflexe.
+  // Braucht Float-Rendertargets — fehlen die auf einer Mobil-GPU, läuft die
+  // Galerie ohne Reflexe weiter statt gar nicht (Fake-Lichter tragen den Look).
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.25;
+  } catch (fehler) {
+    console.warn("Environment-Reflexe nicht verfügbar:", fehler);
+  }
 
   // Kühl-neutraler Fill — der warme Spot bekommt dadurch Kontrast
   scene.add(new THREE.HemisphereLight(0xf3ead9, 0x0e0c09, KONFIG.licht.grundlicht));

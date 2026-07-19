@@ -113,6 +113,8 @@ await pruefe("Verkauftes Werk ist gesperrt", async () => {
 
 // 5. Saalwechsel
 await pruefe("Saalwechsel per Navigation", async () => {
+  await seite.keyboard.press("Escape"); // evtl. offenes Panel deterministisch schließen
+  await seite.waitForTimeout(400);
   const knopf = seite.locator("#room-nav button").nth(2);
   await knopf.click();
   await seite.waitForTimeout(1600);
