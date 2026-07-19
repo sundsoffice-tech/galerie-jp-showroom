@@ -6,7 +6,7 @@
 import * as THREE from "three";
 import { raeume, werkeImRaum, bildQuelle, galerie } from "./katalog.js";
 import { KONFIG, TIER } from "./konfig.js";
-import { IST_TOUCH, IST_SCHWACH } from "./geraet.js";
+import { IST_TOUCH, IST_SCHWACH, REDUZIERTE_BEWEGUNG } from "./geraet.js";
 import {
   alsTextur,
   putzCanvas,
@@ -230,6 +230,14 @@ export function erstelleSzene(canvas) {
     const sturz = new THREE.Mesh(new THREE.BoxGeometry(WAND_D + 0.07, 0.09, TUER_B + 0.09), rahmenMatTuer);
     sturz.position.set(wx, TUER_H + 0.045, 0);
     scene.add(sturz);
+
+    // Messing-Türschwelle: greift den UI-Akzent im Raum auf, glänzt via EnvMap
+    const schwelle = new THREE.Mesh(
+      new THREE.BoxGeometry(WAND_D + 0.1, 0.012, TUER_B),
+      new THREE.MeshStandardMaterial({ color: 0xc2a36b, metalness: 0.85, roughness: 0.3, envMapIntensity: 1.0 })
+    );
+    schwelle.position.set(wx, 0.006, 0);
+    scene.add(schwelle);
 
     // Beschriftung über der Tür: wohin führt sie? (Farbe je Saalseite)
     erstelleLettering(scene, `${raeume[i + 1].saal} — ${raeume[i + 1].name}`.toUpperCase(), {
@@ -466,10 +474,18 @@ export function erstelleSzene(canvas) {
     gruppe.add(klickflaeche);
     klickbare.push(bild, klickflaeche);
 
-    // Plakette rechts neben dem Werk
+    // Plakette rechts neben dem Werk — als physisches Acrylschild
+    const schild = new THREE.Mesh(
+      new THREE.BoxGeometry(0.345, 0.205, 0.006),
+      new THREE.MeshStandardMaterial({ color: 0xf2eee6, roughness: 0.5 })
+    );
+    schild.position.set(b / 2 + 0.42, -h * 0.16, 0.008);
+    gruppe.add(schild);
+    const plakTex = alsTextur(plakettenCanvas(werk));
+    plakTex.anisotropy = ANISO; // sonst wird der Text aus schrägem Blick matschig
     const plakette = new THREE.Mesh(
       new THREE.PlaneGeometry(0.34, 0.2),
-      new THREE.MeshBasicMaterial({ map: alsTextur(plakettenCanvas(werk)) })
+      new THREE.MeshBasicMaterial({ map: plakTex })
     );
     plakette.position.set(b / 2 + 0.42, -h * 0.16, 0.012);
     plakette.userData = { werkId: werk.id, istPlakette: true };
@@ -488,7 +504,68 @@ export function erstelleSzene(canvas) {
     );
     zuendReihe++;
 
-    kunstwerke.set(werk.id, { gruppe, flaeche: bild, normal, plakette, werk, raum });
+    kunstwerke.set(werk.id, {
+      gruppe,
+      flaeche: bild,
+      normal,
+      plakette,
+      werk,
+      raum,
+      inselMat,
+      inselBasis: KONFIG.licht.poolWand * stil.poolFaktor,
+    });
+  }
+
+  // ————— Hover-Glow: die Lichtinsel des angeblickten Werks hellt auf —————
+  let hoverWerk = null;
+  function setzeHover(werkId) {
+    hoverWerk = werkId;
+  }
+  function updateHover(dt) {
+    const k = 1 - Math.exp(-8 * dt);
+    for (const [id, e] of kunstwerke) {
+      const ziel = id === hoverWerk ? Math.min(1, e.inselBasis * 1.4) : e.inselBasis;
+      if (Math.abs(e.inselMat.opacity - ziel) > 0.003) {
+        e.inselMat.opacity += (ziel - e.inselMat.opacity) * k;
+      }
+    }
+  }
+
+  // ————— Staub im Saallicht: die Luft wird sichtbar —————
+  const staubProSaal = TIER === "A" ? 110 : 55;
+  const staubAnzahl = staubProSaal * anzahl;
+  const staubGeo = new THREE.BufferGeometry();
+  const staubPos = new Float32Array(staubAnzahl * 3);
+  for (let i = 0; i < staubAnzahl; i++) {
+    const saal = i % anzahl;
+    staubPos[i * 3] = raumZentrumX(saal) + (Math.random() - 0.5) * RAUM_B * 0.8;
+    staubPos[i * 3 + 1] = 0.5 + Math.random() * (RAUM_H - 1.1);
+    staubPos[i * 3 + 2] = (Math.random() - 0.5) * RAUM_T * 0.7;
+  }
+  staubGeo.setAttribute("position", new THREE.BufferAttribute(staubPos, 3));
+  const staub = new THREE.Points(
+    staubGeo,
+    new THREE.PointsMaterial({
+      color: 0xffe9c8,
+      size: 0.02,
+      transparent: true,
+      opacity: 0.28,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  scene.add(staub);
+
+  function updateStaub(dt, zeit) {
+    if (REDUZIERTE_BEWEGUNG) return; // still stehende Partikel statt Bewegung
+    const p = staubGeo.attributes.position;
+    for (let i = 0; i < staubAnzahl; i++) {
+      let y = p.getY(i) - dt * 0.02;
+      if (y < 0.4) y = RAUM_H - 0.7;
+      p.setY(i, y);
+      p.setX(i, p.getX(i) + Math.sin(zeit * 0.3 + i) * 0.0004);
+    }
+    p.needsUpdate = true;
   }
 
   function aktualisiereVerkauft(werkId) {
@@ -496,7 +573,9 @@ export function erstelleSzene(canvas) {
     if (!e) return;
     e.werk.verkauft = true;
     e.plakette.material.map?.dispose();
-    e.plakette.material.map = alsTextur(plakettenCanvas(e.werk));
+    const neu = alsTextur(plakettenCanvas(e.werk));
+    neu.anisotropy = ANISO;
+    e.plakette.material.map = neu;
     e.plakette.material.needsUpdate = true;
   }
 
@@ -537,6 +616,9 @@ export function erstelleSzene(canvas) {
     belichtung,
     beleuchtung,
     podestObjekt,
+    setzeHover,
+    updateHover,
+    updateStaub,
   };
 }
 

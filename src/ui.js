@@ -327,7 +327,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       img.alt = werk.titel;
       img.addEventListener("click", () => {
         schliesseCart();
-        steuerungRef().fokussiere(id);
+        if (!steuerungRef().fokussiere(id)) oeffneWerk(id);
       });
       const mitte = document.createElement("div");
       mitte.innerHTML = `<div class="cart-item-title">${werk.titel}</div><div class="cart-item-artist">${werk.kuenstler}, Unikat</div>`;
@@ -374,7 +374,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
         el.querySelector("img").src = bildThumbnail(werk);
         el.addEventListener("click", () => {
           schliesseKatalog();
-          steuerungRef().fokussiere(werk.id);
+          // ungehängte Werke (Saal überbelegt): Details ohne Kamerafahrt
+          if (!steuerungRef().fokussiere(werk.id)) oeffneWerk(werk.id);
         });
         grid.appendChild(el);
       });

@@ -121,6 +121,24 @@ await pruefe("Saalwechsel per Navigation", async () => {
   return "Saal III erreicht";
 });
 
+// 5b. Werk in einem anderen Saal über den Katalog ansteuern:
+// muss per Blende+Teleport gehen, nie als Kamerafahrt durch die Wände
+await pruefe("Katalog-Klick über Säle hinweg wechselt den Saal", async () => {
+  await seite.click("#catalog-open");
+  await seite.waitForTimeout(700);
+  await seite.locator(".catalog-item").first().click(); // Werk 1 liegt in Saal I
+  await seite.waitForTimeout(3400); // Blende (0,4 s) + Fokusfahrt (1,6 s)
+  const z = await seite.evaluate(() => ({
+    raum: window.__galerie.steuerung().aktuellerRaum(),
+    offen: document.getElementById("artwork-panel").classList.contains("open"),
+  }));
+  if (z.raum !== 0) throw new Error(`in Saal ${z.raum} statt Saal I gelandet`);
+  if (!z.offen) throw new Error("Werk-Panel nicht offen");
+  await seite.keyboard.press("Escape");
+  await seite.waitForTimeout(400);
+  return "Blende + Teleport + Fokus in Saal I";
+});
+
 // 6. Tastatur darf Formulare nicht stören (Regressionstest zum Review-Fund)
 await pruefe("Tippen im Formular bewegt die Kamera nicht", async () => {
   await seite.click("#cart-open");

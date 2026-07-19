@@ -179,11 +179,24 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
   }
 
   // ————— Fokus-Kamerafahrt (Bogen + Kontemplations-Drift) —————
+  // Rückgabe false = Werk nicht ansteuerbar (ungehängt oder Intro läuft);
+  // die UI kann dann wenigstens das Detail-Panel öffnen.
   function fokussiere(werkId) {
     const e = kunstwerke.get(werkId);
     // Solange das Intro die Kamera führt, keine Fokusfahrt annehmen —
     // sie würde von der Intro-Timeline überschrieben.
-    if (!e || !aktiv) return;
+    if (!e || !aktiv) return false;
+
+    // Werk hängt in einem anderen Saal: die Bogen-Fahrt würde durch die
+    // Innenwände clippen — stattdessen Blende, Teleport, dann normale Fahrt.
+    const zielSaal = naechsterRaumZuX(e.gruppe.position.x);
+    if (zielSaal !== aktuellerRaum() && !tween) {
+      callbacks.saalwechsel(zielSaal, () => {
+        teleportiere(zielSaal);
+        fokussiere(werkId);
+      });
+      return true;
+    }
 
     // Zweiter Klick auf das fokussierte Werk: Nahzoom auf die Textur
     if (fokus === werkId && !tween && fokusStand) {
@@ -204,7 +217,7 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
         nachPitch: pitch,
       };
       fokusStand = nah.clone();
-      return;
+      return true;
     }
 
     fokus = werkId;
@@ -246,6 +259,7 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     fokusZeit = 0;
     callbacks.werkGewaehlt(werkId);
     callbacks.fokusKlang?.();
+    return true;
   }
 
   function kuerzesterYaw(von, nach) {
@@ -433,17 +447,21 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     }
   }
 
-  function aktuellerRaum() {
+  function naechsterRaumZuX(x) {
     let best = 0;
     let bestD = Infinity;
     for (let i = 0; i < raeume.length; i++) {
-      const d = Math.abs(camera.position.x - raumZentrumX(i));
+      const d = Math.abs(x - raumZentrumX(i));
       if (d < bestD) {
         bestD = d;
         best = i;
       }
     }
     return best;
+  }
+
+  function aktuellerRaum() {
+    return naechsterRaumZuX(camera.position.x);
   }
 
   // Portrait: vertikales FOV anheben, damit das horizontale Sichtfeld reicht

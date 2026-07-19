@@ -92,6 +92,15 @@ function platzhalterCanvas(werk) {
 
   // Körnung ist rein kosmetisch — auf schwachen Geräten überspringen
   if (!IST_SCHWACH) koernung(ctx, W, H, rnd, werk.raum === "fotografie" ? 26 : 10);
+
+  // Leinwandgewebe für Malerei: aus Distanz unsichtbar, im Nahzoom
+  // wirkt die Fläche wie bespannte Leinwand statt wie ein Bildschirm
+  if (werk.raum !== "fotografie") {
+    ctx.fillStyle = "rgba(255,255,255,0.028)";
+    for (let x = 0; x < W; x += 3) ctx.fillRect(x, 0, 1, H);
+    ctx.fillStyle = "rgba(0,0,0,0.028)";
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+  }
   return c;
 }
 

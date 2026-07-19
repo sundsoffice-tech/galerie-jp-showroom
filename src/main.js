@@ -131,7 +131,10 @@ steuerung = erstelleSteuerung({
   callbacks: {
     werkGewaehlt: (id) => ui.oeffneWerk(id),
     schliessePanel: () => ui.schliesseWerkPanel(),
-    hover: (id, x, y) => ui.zeigeHover(id, x, y),
+    hover: (id, x, y) => {
+      ui.zeigeHover(id, x, y);
+      szene.setzeHover(id); // Lichtinsel des angeblickten Werks hellt auf
+    },
     saalwechsel: (index, teleport) => ui.blendeZuSaal(raeume[index], teleport),
     schritt: (links, tempo) => klang.schritt(links, tempo),
     fokusKlang: () => klang.fokusWusch(),
@@ -202,6 +205,9 @@ function loop() {
   }
 
   szene.beleuchtung.update(dt);
+  // Hover-Glow erst nach der Licht-Zündung, sonst kämpfen beide um die Opacity
+  if (!introAktiv) szene.updateHover(dt);
+  szene.updateStaub(dt, clock.elapsedTime);
 
   // Messingobjekt auf dem Podest dreht sich kaum merklich
   if (szene.podestObjekt) szene.podestObjekt.rotation.y += dt * 0.15;
