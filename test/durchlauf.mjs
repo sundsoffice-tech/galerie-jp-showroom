@@ -75,10 +75,18 @@ await pruefe("Werk in die Sammlung legen", async () => {
   return "Zähler 1";
 });
 
-await pruefe("Unikat lässt sich nicht doppelt sammeln", async () => {
-  const aus = await seite.evaluate(() => document.getElementById("aw-add").disabled);
-  if (!aus) throw new Error("Button noch aktiv");
-  return "Button gesperrt";
+await pruefe("Button wechselt zu Entfernen und zurück", async () => {
+  const text = await seite.evaluate(() => document.getElementById("aw-add").textContent);
+  if (!text.includes("entfernen")) throw new Error(`Button sagt „${text}"`);
+  await seite.click("#aw-add"); // entfernen
+  await seite.waitForTimeout(400);
+  const leer = await seite.evaluate(() => document.getElementById("cart-count").textContent);
+  if (leer !== "0") throw new Error(`Zähler nach Entfernen: ${leer}`);
+  await seite.click("#aw-add"); // wieder hinein
+  await seite.waitForTimeout(400);
+  const voll = await seite.evaluate(() => document.getElementById("cart-count").textContent);
+  if (voll !== "1") throw new Error(`Zähler nach erneutem Sammeln: ${voll}`);
+  return "entfernt und wieder gesammelt";
 });
 
 // 4. Checkout

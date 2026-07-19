@@ -4,7 +4,7 @@
 // automatisch gehängt — neue Werke in werke.json => neue Hängung, ohne Code.
 
 import * as THREE from "three";
-import { raeume, werkeImRaum, bildQuelle, galerie } from "./katalog.js";
+import { raeume, werkeImRaum, bildQuelle, platzhalterCanvasFuer, galerie } from "./katalog.js";
 import { KONFIG, TIER } from "./konfig.js";
 import { IST_TOUCH, IST_SCHWACH, REDUZIERTE_BEWEGUNG } from "./geraet.js";
 import {
@@ -171,6 +171,8 @@ export function erstelleSzene(canvas) {
     return m;
   }
 
+  const vouteMat = new THREE.MeshBasicMaterial({ color: 0x392c19 });
+
   function sockelUndFuge(laenge, x, z, rotY) {
     const s = new THREE.Mesh(new THREE.BoxGeometry(laenge, 0.11, 0.035), sockelMat);
     s.rotation.y = rotY;
@@ -180,6 +182,11 @@ export function erstelleSzene(canvas) {
     f.rotation.y = rotY;
     f.position.set(x, 0.12, z);
     scene.add(f);
+    // Lichtvoute: ein warmer Saum definiert die sonst schwarze Deckenkante
+    const v = new THREE.Mesh(new THREE.BoxGeometry(laenge, 0.035, 0.03), vouteMat);
+    v.rotation.y = rotY;
+    v.position.set(x, RAUM_H - 0.06, z);
+    scene.add(v);
   }
 
   // Längswände Nord/Süd — ein Segment pro Saal (eigene Saalfarbe)
@@ -219,6 +226,15 @@ export function erstelleSzene(canvas) {
     hoeheM: 0.09,
     farbe: "rgba(150,136,112,0.9)",
   });
+  // Die Marke wird beleuchtet wie ein Werk — eigener Strahler samt Kegel
+  erstelleStrahler(
+    scene,
+    new THREE.Vector3(minX + WAND_D, 2.0, 0),
+    new THREE.Vector3(1, 0, 0),
+    2.4,
+    beleuchtung.registriere,
+    zuendReihe++
+  );
 
   // Innenwände: zwei Halbschalen, damit jeder Saal seine Farbe behält
   const rahmenMatTuer = new THREE.MeshStandardMaterial({ color: 0x2a251d, roughness: 0.4, metalness: 0.15 });
@@ -401,11 +417,22 @@ export function erstelleSzene(canvas) {
     gruppe.add(pool);
     beleuchtung.registriere(poolMat, KONFIG.licht.poolBoden * stil.poolFaktor, zuendReihe);
 
-    // Bildtextur
+    // Bildtextur — lädt ein echtes Foto nicht, springt still der Platzhalter
+    // ein (sonst hinge ein schwarzes Rechteck an der Wand)
     const q = bildQuelle(werk);
     let textur;
-    if (q.typ === "canvas") textur = new THREE.CanvasTexture(q.wert);
-    else textur = new THREE.TextureLoader().load(q.wert);
+    if (q.typ === "canvas") {
+      textur = new THREE.CanvasTexture(q.wert);
+    } else {
+      textur = new THREE.TextureLoader().load(q.wert, undefined, undefined, () => {
+        console.warn(`Werkfoto „${q.wert}" nicht ladbar — Platzhalter aktiv (${werk.id}).`);
+        const ersatz = new THREE.CanvasTexture(platzhalterCanvasFuer(werk));
+        ersatz.colorSpace = THREE.SRGBColorSpace;
+        ersatz.anisotropy = ANISO;
+        bild.material.map = ersatz;
+        bild.material.needsUpdate = true;
+      });
+    }
     textur.colorSpace = THREE.SRGBColorSpace;
     textur.anisotropy = ANISO;
 

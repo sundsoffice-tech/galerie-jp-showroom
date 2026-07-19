@@ -79,6 +79,13 @@ html, body {
 .btn-brass:hover:not(:disabled) { filter: brightness(1.08); }
 .btn-brass:active:not(:disabled) { transform: translateY(1px); }
 .btn-brass:disabled { opacity: 0.35; cursor: default; }
+/* Zweitzustand des Sammel-Buttons: ruhig statt fordernd */
+.btn-brass.entfernen {
+  background: transparent;
+  color: var(--ivory-dim);
+  border: 1px solid var(--line);
+}
+.btn-brass.entfernen:hover { color: var(--ivory); border-color: var(--brass); filter: none; }
 .btn-brass:focus-visible,
 button:focus-visible,
 input:focus-visible,

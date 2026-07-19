@@ -21,10 +21,17 @@ import { erstelleUI, ladeVerkaufte } from "./ui.js";
 import { erstelleIntro } from "./intro.js";
 import * as klang from "./klang.js";
 
-// Galeriename aus den Katalogdaten in Titel, Wortmarke und Intro
+// Galeriename und Saalzahl aus den Katalogdaten — pflegt der Händler die
+// Säle, stimmt auch der Eintritts-Text weiter
 document.title = `${galerie.name} — Virtueller Showroom`;
 document.querySelector(".wordmark").textContent = galerie.name;
 document.querySelector(".intro-title").textContent = galerie.name;
+const ZAHLWORT = ["", "Ein", "Zwei", "Drei", "Vier", "Fünf", "Sechs", "Sieben", "Acht"];
+const saalText =
+  raeume.length === 1
+    ? "Ein Saal"
+    : `${ZAHLWORT[raeume.length] || raeume.length} Säle`;
+document.querySelector(".intro-sub").textContent = `${saalText}. Ausgewählte Werke. Direkt erwerbbar.`;
 
 // Bereits (im Demo-Modus) verkaufte Werke aus dem Speicher übernehmen
 const verkaufteIds = ladeVerkaufte();

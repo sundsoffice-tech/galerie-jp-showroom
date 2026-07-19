@@ -2,7 +2,7 @@
 // Saal-Blende mit Caption, Touch-Joystick und Stummschalter.
 // Jedes Werk ist ein Unikat: nur einmal sammelbar, nach Verkauf gesperrt.
 
-import { raeume, raumById, werkById, werkeImRaum, formatPreis, bildThumbnail, galerie } from "./katalog.js";
+import { raeume, raumById, werkById, werkeImRaum, formatPreis, setzeWerkBild, galerie } from "./katalog.js";
 import * as klang from "./klang.js";
 import { machBottomSheet } from "./bottomsheet.js";
 import { IST_TOUCH } from "./geraet.js";
@@ -180,7 +180,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("aw-year").textContent = werk.jahr;
     $("aw-desc").textContent = werk.beschreibung;
     $("aw-price").textContent = formatPreis(werk.preis);
-    $("aw-bild").src = bildThumbnail(werk);
+    setzeWerkBild($("aw-bild"), werk);
     $("aw-bild").alt = `${werk.titel}, ${werk.kuenstler}`;
     // Anfrage-CTA per Mail (nur wenn eine Galerie-Adresse gepflegt ist)
     const inquiry = $("aw-inquiry");
@@ -244,8 +244,9 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       kaufzeile.classList.remove("hidden");
       $("aw-sold").classList.add("hidden");
       const drin = sammlung.includes(werk.id);
-      btn.disabled = drin;
-      btn.textContent = drin ? "In Ihrer Sammlung" : "In die Sammlung";
+      btn.disabled = false;
+      btn.textContent = drin ? "Aus der Sammlung entfernen" : "In die Sammlung";
+      btn.classList.toggle("entfernen", drin);
       // „Preis auf Anfrage": kein Warenkorb, nur der Anfrage-Weg
       btn.classList.toggle("hidden", werk.preis == null);
     }
@@ -263,7 +264,16 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   $("aw-add").addEventListener("click", () => {
     if (!offenesWerk) return;
     const werk = werkById(offenesWerk);
-    if (werk.verkauft || sammlung.includes(werk.id)) return;
+    if (werk.verkauft) return;
+    if (sammlung.includes(werk.id)) {
+      // zweiter Weg des Buttons: wieder herausnehmen
+      sammlung = sammlung.filter((x) => x !== werk.id);
+      speichereSammlung();
+      aktualisiereKaufButton();
+      renderSammlung();
+      melde(`„${werk.titel}" aus der Sammlung entfernt.`);
+      return;
+    }
     sammlung.push(werk.id);
     speichereSammlung();
     aktualisiereKaufButton();
@@ -318,15 +328,24 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     if (!sammlung.length) {
       const leer = document.createElement("p");
       leer.className = "cart-empty";
-      leer.textContent = "Noch keine Werke ausgewählt. Klicken Sie im Rundgang ein Werk an.";
+      leer.textContent = "Noch keine Werke ausgewählt.";
       wrap.appendChild(leer);
+      // Kein toter Endpunkt: direkt weiter in den Katalog
+      const cta = document.createElement("button");
+      cta.className = "btn-stripe";
+      cta.textContent = "Alle Werke ansehen";
+      cta.addEventListener("click", () => {
+        schliesseCart();
+        $("catalog-open").click();
+      });
+      wrap.appendChild(cta);
     }
     sammlung.forEach((id) => {
       const werk = werkById(id);
       const el = document.createElement("div");
       el.className = "cart-item";
       const img = document.createElement("img");
-      img.src = bildThumbnail(werk);
+      setzeWerkBild(img, werk);
       img.alt = werk.titel;
       img.addEventListener("click", () => {
         schliesseCart();
@@ -379,7 +398,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
             <div class="ci-sub">${werk.kuenstler} · ${raum.name}</div>
             <div class="ci-preis ${werk.verkauft ? "verkauft" : ""}">${werk.verkauft ? "Verkauft" : formatPreis(werk.preis)}</div>
           </div>`;
-        el.querySelector("img").src = bildThumbnail(werk);
+        setzeWerkBild(el.querySelector("img"), werk);
         el.addEventListener("click", () => {
           schliesseKatalog();
           // ungehängte Werke (Saal überbelegt): Details ohne Kamerafahrt

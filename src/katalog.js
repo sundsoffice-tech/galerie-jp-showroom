@@ -54,6 +54,22 @@ export function bildThumbnail(werk) {
   return q.typ === "url" ? q.wert : q.wert.toDataURL("image/jpeg", 0.7);
 }
 
+// Rückfall, wenn ein gepflegtes Werkfoto nicht lädt (Tippfehler, fehlende
+// Datei): der stilechte Platzhalter statt eines kaputten/schwarzen Bilds.
+export function platzhalterCanvasFuer(werk) {
+  if (!bildCache.has(werk.id)) bildCache.set(werk.id, platzhalterCanvas(werk));
+  return bildCache.get(werk.id);
+}
+
+// Verdrahtet ein <img> mit Quelle + Platzhalter-Rückfall in einem Schritt.
+export function setzeWerkBild(img, werk) {
+  img.onerror = () => {
+    img.onerror = null;
+    img.src = platzhalterCanvasFuer(werk).toDataURL("image/jpeg", 0.7);
+  };
+  img.src = bildThumbnail(werk);
+}
+
 // ————— Platzhalter-Generator (seeded, pro Raum-Thema ein Stil) —————
 
 function seedAusString(s) {
