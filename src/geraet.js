@@ -1,9 +1,11 @@
 // Geräte-Erkennung — einmal beim Start, plus Live-Queries für Layoutwechsel.
 
-// ?touch=1 erzwingt das Touch-Layout (für Tests/Demos am Desktop)
-const touchErzwungen =
+// ?touch=1 erzwingt das Touch-Layout (für Tests/Demos am Desktop);
+// Gesten wie der Joystick akzeptieren dann auch Maus-Pointer
+export const TOUCH_ERZWUNGEN =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).get("touch") === "1";
+const touchErzwungen = TOUCH_ERZWUNGEN;
 
 export const IST_TOUCH =
   typeof window !== "undefined" &&

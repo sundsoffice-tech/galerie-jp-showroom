@@ -33,6 +33,58 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   let offenesWerk = null;
   let fokusVorher = null; // Tastatur-Fokus vor dem Öffnen eines Panels
 
+  // ————— System-Zurück (v. a. Android): schließt die oberste Ebene,
+  // statt die Galerie zu verlassen. Modell: EIN Verlaufseintrag, solange
+  // irgendein Overlay offen ist — Wechsel zwischen Panels berühren den
+  // Verlauf nicht (keine Race mit dem asynchronen history.back()).
+  let verlaufAktiv = false;
+  let popUnterdruecken = 0;
+
+  function irgendwasOffen() {
+    return (
+      !legal.classList.contains("hidden") ||
+      !checkout.classList.contains("hidden") ||
+      catalogPanel.classList.contains("open") ||
+      cartPanel.classList.contains("open") ||
+      panel.classList.contains("open")
+    );
+  }
+
+  // nach jedem Öffnen aufrufen
+  function verlaufAnlegen() {
+    if (verlaufAktiv) return;
+    history.pushState({ galerieOverlay: true }, "");
+    verlaufAktiv = true;
+  }
+
+  // nach jedem Schließen aufrufen (egal aus welcher Quelle)
+  function verlaufAbbauen() {
+    if (!verlaufAktiv || irgendwasOffen()) return;
+    verlaufAktiv = false;
+    popUnterdruecken++;
+    history.back();
+  }
+
+  window.addEventListener("popstate", () => {
+    if (popUnterdruecken > 0) {
+      popUnterdruecken--;
+      return;
+    }
+    if (!verlaufAktiv) return;
+    verlaufAktiv = false;
+    schliesseObersteEbene();
+    // liegt darunter noch ein Overlay, bleibt die Galerie „einen Back entfernt"
+    if (irgendwasOffen()) verlaufAnlegen();
+  });
+
+  function schliesseObersteEbene() {
+    if (!legal.classList.contains("hidden")) schliesseLegal(false);
+    else if (!checkout.classList.contains("hidden")) schliesseCheckout(false);
+    else if (catalogPanel.classList.contains("open")) schliesseKatalog(false);
+    else if (cartPanel.classList.contains("open")) schliesseCart(false);
+    else if (panel.classList.contains("open")) schliesseWerkPanel(false);
+  }
+
   function merkeFokus() {
     const el = document.activeElement;
     // Fokus in einem gerade schließenden Panel wäre nach dem Schließen unsichtbar
@@ -201,6 +253,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     if (warZu) {
       merkeFokus();
       panel.querySelector(".panel-close").focus({ preventScroll: true });
+      verlaufAnlegen();
     }
   }
 
@@ -282,15 +335,17 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     melde(`„${werk.titel}" in die Sammlung gelegt.`);
   });
 
-  function schliesseWerkPanel() {
+  function schliesseWerkPanel(mitVerlauf = true) {
+    const warOffen = panel.classList.contains("open");
     offenesWerk = null;
     werkSheet.schliesse();
     panel.classList.remove("open");
     panel.setAttribute("aria-hidden", "true");
     steuerungRef().fokusVerlassen();
     steuerungRef().setzeSheetOffset(false);
-    history.replaceState(null, "", location.pathname + location.search);
+    history.replaceState(history.state, "", location.pathname + location.search);
     stelleFokusWiederHer();
+    if (warOffen && mitVerlauf) verlaufAbbauen();
   }
 
   // ————— Sammlung (Warenkorb) —————
@@ -300,11 +355,13 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     onClose: () => schliesseCart(),
   });
 
-  function schliesseCart() {
+  function schliesseCart(mitVerlauf = true) {
+    const warOffen = cartPanel.classList.contains("open");
     cartSheet.schliesse();
     cartPanel.classList.remove("open");
     cartPanel.setAttribute("aria-hidden", "true");
     backdrop.classList.remove("visible");
+    if (warOffen && mitVerlauf) verlaufAbbauen();
   }
 
   function speichereSammlung() {
@@ -335,8 +392,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       cta.className = "btn-stripe";
       cta.textContent = "Alle Werke ansehen";
       cta.addEventListener("click", () => {
+        $("catalog-open").click(); // erst öffnen, dann schließen (Verlauf ruhig)
         schliesseCart();
-        $("catalog-open").click();
       });
       wrap.appendChild(cta);
     }
@@ -348,8 +405,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       setzeWerkBild(img, werk);
       img.alt = werk.titel;
       img.addEventListener("click", () => {
-        schliesseCart();
         if (!steuerungRef().fokussiere(id)) oeffneWerk(id);
+        schliesseCart();
       });
       const mitte = document.createElement("div");
       mitte.innerHTML = `<div class="cart-item-title">${werk.titel}</div><div class="cart-item-artist">${werk.kuenstler}, Unikat</div>`;
@@ -400,27 +457,33 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
           </div>`;
         setzeWerkBild(el.querySelector("img"), werk);
         el.addEventListener("click", () => {
-          schliesseKatalog();
-          // ungehängte Werke (Saal überbelegt): Details ohne Kamerafahrt
+          // erst das Werk öffnen, dann den Katalog schließen — so bleibt
+          // durchgehend ein Overlay offen und der Zurück-Verlauf ruhig
           if (!steuerungRef().fokussiere(werk.id)) oeffneWerk(werk.id);
+          schliesseKatalog();
         });
         grid.appendChild(el);
       });
     });
   }
 
-  function schliesseKatalog() {
+  function schliesseKatalog(mitVerlauf = true) {
+    const warOffen = catalogPanel.classList.contains("open");
     catalogSheet.schliesse();
     catalogPanel.classList.remove("open");
     catalogPanel.setAttribute("aria-hidden", "true");
     stelleFokusWiederHer();
+    if (warOffen && mitVerlauf) verlaufAbbauen();
   }
 
   $("catalog-open").addEventListener("click", () => {
-    if (panel.classList.contains("open")) schliesseWerkPanel(); // ein Panel rechts
     renderKatalog();
     if (!catalogSheet.oeffne("voll")) catalogPanel.classList.add("open");
     catalogPanel.setAttribute("aria-hidden", "false");
+    verlaufAnlegen();
+    // „ein Panel rechts": das Werk-Panel erst NACH dem Öffnen schließen,
+    // damit durchgehend etwas offen ist und der Verlauf ruhig bleibt
+    if (panel.classList.contains("open")) schliesseWerkPanel();
     merkeFokus();
     catalogPanel.querySelector(".panel-close").focus({ preventScroll: true });
   });
@@ -448,19 +511,20 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       $("legal-titel").textContent = eintrag.titel;
       $("legal-text").textContent = eintrag.text;
       legal.classList.remove("hidden");
+      verlaufAnlegen();
       merkeFokus();
       legal.querySelector(".panel-close").focus({ preventScroll: true });
     })
   );
   legal.addEventListener("click", (e) => {
-    if (e.target === legal) legal.classList.add("hidden");
+    if (e.target === legal) schliesseLegal();
   });
 
   // ————— Kasse —————
   const checkout = $("checkout");
   // Backdrop-Klick schließt das Modal
   checkout.addEventListener("click", (e) => {
-    if (e.target === checkout) checkout.classList.add("hidden");
+    if (e.target === checkout) schliesseCheckout();
   });
 
   $("checkout-open").addEventListener("click", () => {
@@ -478,9 +542,22 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("checkout-form-view").classList.remove("hidden");
     $("checkout-success-view").classList.add("hidden");
     checkout.classList.remove("hidden");
+    verlaufAnlegen();
     merkeFokus();
     checkout.querySelector('input[name="name"]').focus({ preventScroll: true });
   });
+
+  function schliesseCheckout(mitVerlauf = true) {
+    const warOffen = !checkout.classList.contains("hidden");
+    checkout.classList.add("hidden");
+    if (warOffen && mitVerlauf) verlaufAbbauen();
+  }
+
+  function schliesseLegal(mitVerlauf = true) {
+    const warOffen = !legal.classList.contains("hidden");
+    legal.classList.add("hidden");
+    if (warOffen && mitVerlauf) verlaufAbbauen();
+  }
 
   // Reservierung per E-Mail an die Galerie — serverlos über Web3Forms.
   // Leerer web3formsKey in werke.json = Demo-Modus (keine Mail, gleiche UI).
@@ -575,12 +652,13 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   // ————— Öffnen / Schließen —————
   $("cart-open").addEventListener("click", () => {
-    if (panel.classList.contains("open")) schliesseWerkPanel(); // ein Panel rechts
-    if (catalogPanel.classList.contains("open")) schliesseKatalog();
     renderSammlung();
     if (!cartSheet.oeffne("voll")) cartPanel.classList.add("open");
     else backdrop.classList.add("visible");
     cartPanel.setAttribute("aria-hidden", "false");
+    verlaufAnlegen();
+    if (panel.classList.contains("open")) schliesseWerkPanel(); // ein Panel rechts
+    if (catalogPanel.classList.contains("open")) schliesseKatalog();
   });
 
   document.querySelectorAll("[data-close]").forEach((b) =>
@@ -589,8 +667,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       if (ziel === "artwork") schliesseWerkPanel();
       if (ziel === "cart") schliesseCart();
       if (ziel === "catalog") schliesseKatalog();
-      if (ziel === "checkout") checkout.classList.add("hidden");
-      if (ziel === "legal") legal.classList.add("hidden");
+      if (ziel === "checkout") schliesseCheckout();
+      if (ziel === "legal") schliesseLegal();
     })
   );
 
@@ -602,8 +680,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   window.addEventListener("keydown", (e) => {
     if (e.code !== "Escape") return;
-    if (!legal.classList.contains("hidden")) legal.classList.add("hidden");
-    else if (!checkout.classList.contains("hidden")) checkout.classList.add("hidden");
+    if (!legal.classList.contains("hidden")) schliesseLegal();
+    else if (!checkout.classList.contains("hidden")) schliesseCheckout();
     else if (catalogPanel.classList.contains("open")) schliesseKatalog();
     else if (cartPanel.classList.contains("open")) schliesseCart();
     else if (panel.classList.contains("open")) schliesseWerkPanel();

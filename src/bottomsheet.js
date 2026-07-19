@@ -30,6 +30,7 @@ export function machBottomSheet(panel, { peek = 0.46, voll = 0.88, onClose } = {
     stufe = neueStufe;
     sichtbar = Math.min(Math.round(H() * (neueStufe === "voll" ? voll : peek)), maxSichtbar());
     panel.classList.add("open");
+    panel.classList.toggle("voll", neueStufe === "voll"); // CSS darf reagieren
     anwenden();
     return true;
   }
@@ -38,7 +39,7 @@ export function machBottomSheet(panel, { peek = 0.46, voll = 0.88, onClose } = {
     sichtbar = 0;
     stufe = null;
     panel.style.transform = ""; // zurück an CSS
-    panel.classList.remove("open");
+    panel.classList.remove("open", "voll");
   }
 
   handle.addEventListener("pointerdown", (e) => {

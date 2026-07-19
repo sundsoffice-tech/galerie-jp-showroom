@@ -319,8 +319,17 @@ html.touch .hint-touch { display: inline; }
   opacity: 0.75;
   transition: opacity 0.25s ease;
 }
-#joystick.aktiv { display: block; }
+#joystick.aktiv { display: block; animation: joy-hallo 1.5s ease 0.4s 1; }
 #joystick.greift { opacity: 1; }
+/* einmaliges, sanftes „Hier bin ich" beim ersten Erscheinen */
+@keyframes joy-hallo {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.07); opacity: 1; }
+  60% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #joystick.aktiv { animation: none; }
+}
 .joy-nub {
   position: absolute;
   left: 50%;
@@ -993,8 +1002,10 @@ html.modus-2d .panel { width: min(30rem, 96vw); }
 
   /* Im Sheet zählt jede Zeile: Preis und Kauf-Button müssen schon im
      Peek-Zustand sichtbar sein. Das Werk selbst steht in 3D dahinter
-     (der ViewOffset hält es frei) — die Abbildung ist hier redundant. */
+     (der ViewOffset hält es frei) — die Abbildung ist hier redundant.
+     Zieht man das Sheet ganz hoch, gehört sie aber dazu. */
   html.touch #aw-bild { display: none; }
+  html.touch .panel.voll #aw-bild { display: block; max-height: 26vh; }
   html.touch .aw-meta { gap: 0.3rem; }
   html.touch .aw-desc { margin-top: 0.9rem; }
   html.touch .aw-unikat { margin-top: 1rem; }

@@ -170,9 +170,52 @@ await pruefe("Tippen im Formular bewegt die Kamera nicht", async () => {
   await seite.keyboard.type("Wanda Sasser");
   await seite.waitForTimeout(600);
   const nach = await seite.evaluate(() => window.__galerie.szene.camera.position.x);
-  await seite.keyboard.press("Escape");
+  await seite.keyboard.press("Escape"); // Checkout zu
+  await seite.waitForTimeout(300);
+  await seite.keyboard.press("Escape"); // Sammlung zu — nichts bleibt offen
+  await seite.waitForTimeout(400);
   if (Math.abs(nach - vor) > 0.02) throw new Error(`Kamera wanderte um ${(nach - vor).toFixed(2)}`);
   return "Kamera unbewegt";
+});
+
+// 7. Mobil: der Joystick muss den Besucher wirklich bewegen
+if (MOBIL) {
+  await pruefe("Joystick bewegt den Besucher", async () => {
+    const vor = await seite.evaluate(() => {
+      const p = window.__galerie.szene.camera.position;
+      return { x: p.x, z: p.z };
+    });
+    const box = await seite.locator("#joystick").boundingBox();
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await seite.mouse.move(cx, cy);
+    await seite.mouse.down();
+    await seite.mouse.move(cx, cy - 44, { steps: 6 }); // Stick nach vorn
+    await seite.waitForTimeout(800);
+    await seite.mouse.up();
+    const nach = await seite.evaluate(() => {
+      const p = window.__galerie.szene.camera.position;
+      return { x: p.x, z: p.z };
+    });
+    const weg = Math.hypot(nach.x - vor.x, nach.z - vor.z);
+    if (weg < 0.2) throw new Error(`kaum Bewegung (${weg.toFixed(2)} m)`);
+    return `${weg.toFixed(2)} m gegangen`;
+  });
+}
+
+// 8. System-Zurück (Android-Geste): schließt das Overlay, verlässt nie die Seite
+await pruefe("System-Zurück schließt das Overlay", async () => {
+  await seite.click("#catalog-open");
+  await seite.waitForTimeout(600);
+  await seite.goBack();
+  await seite.waitForTimeout(600);
+  const z = await seite.evaluate(() => ({
+    zu: !document.getElementById("catalog-panel").classList.contains("open"),
+    da: !!window.__galerie,
+  }));
+  if (!z.da) throw new Error("Seite wurde verlassen!");
+  if (!z.zu) throw new Error("Katalog blieb offen");
+  return "Overlay zu, Galerie bleibt";
 });
 
 console.log(`=== DURCHLAUF (${MOBIL ? "MOBIL 400x860" : "DESKTOP 1280x800"}) — ${ziel} ===`);

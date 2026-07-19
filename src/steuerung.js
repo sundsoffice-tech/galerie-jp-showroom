@@ -69,29 +69,71 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     return { bx, bz };
   }
 
-  // ————— Zeiger-Eingabe: EIN Umseh-Pointer, Tap = Klick —————
+  // ————— Zeiger-Eingabe: EIN Umseh-Pointer, Tap = Klick,
+  // zwei Finger im Fokus = Pinch-Zoom ans Werk —————
   let lookId = null;
   let bewegt = 0;
   let letztX = 0;
   let letztY = 0;
   let downZeit = 0;
   let dxLetzt = 0;
+  const aktivePointer = new Map(); // pointerId -> {x, y}
+  let pinch = null; // { startDist, startAbstand }
+
+  function pinchDistanz() {
+    const [a, b2] = [...aktivePointer.values()];
+    return Math.hypot(a.x - b2.x, a.y - b2.y);
+  }
 
   dom.addEventListener("pointerdown", (e) => {
     if (!aktiv) return;
-    if (lookId !== null) return; // zweiter Finger auf dem Canvas: ignorieren
+    aktivePointer.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    dom.setPointerCapture(e.pointerId);
+
+    // Zweiter Finger bei fokussiertem Werk: Pinch beginnt
+    if (aktivePointer.size === 2 && fokus && fokusStand) {
+      const ziel = kunstwerke.get(fokus);
+      if (ziel) {
+        const punkt = new THREE.Vector3();
+        ziel.flaeche.getWorldPosition(punkt);
+        pinch = {
+          startDist: pinchDistanz(),
+          startAbstand: camera.position.distanceTo(punkt),
+          punkt,
+          normal: ziel.normal.clone(),
+        };
+        tween = null;
+      }
+      return;
+    }
+    if (lookId !== null) return; // dritter Finger: ignorieren
     lookId = e.pointerId;
     bewegt = 0;
     dxLetzt = 0;
     letztX = e.clientX;
     letztY = e.clientY;
     downZeit = performance.now();
-    dom.setPointerCapture(e.pointerId);
     yawVel = 0;
   });
 
   dom.addEventListener("pointermove", (e) => {
     if (!aktiv) return;
+    const p = aktivePointer.get(e.pointerId);
+    if (p) {
+      p.x = e.clientX;
+      p.y = e.clientY;
+    }
+
+    // Pinch: Abstand zum Werk folgt der Fingerspreizung
+    if (pinch && aktivePointer.size >= 2) {
+      bewegt += 10; // nie als Tap werten
+      const faktor = pinch.startDist / Math.max(pinchDistanz(), 20);
+      const abstand = THREE.MathUtils.clamp(pinch.startAbstand * faktor, 0.55, 3.6);
+      fokusStand = pinch.punkt.clone().addScaledVector(pinch.normal, abstand);
+      fokusStand.y = camera.position.y;
+      return;
+    }
+
     if (e.pointerId !== lookId) {
       if (!IST_TOUCH) pruefeHover(e.clientX, e.clientY);
       return;
@@ -107,7 +149,9 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     dxLetzt = dx;
   });
 
-  dom.addEventListener("pointerup", (e) => {
+  function pointerEnde(e) {
+    aktivePointer.delete(e.pointerId);
+    if (aktivePointer.size < 2) pinch = null;
     if (!aktiv || e.pointerId !== lookId) return;
     lookId = null;
     // Nachschwingen des Blicks
@@ -115,12 +159,10 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
       yawVel = THREE.MathUtils.clamp(-dxLetzt * B.drehempfindlichkeit * 40, -1.5, 1.5);
     }
     const warTap = bewegt < TAP_TOLERANZ && performance.now() - downZeit < 500;
-    if (warTap) klick(e.clientX, e.clientY);
-  });
-
-  dom.addEventListener("pointercancel", (e) => {
-    if (e.pointerId === lookId) lookId = null;
-  });
+    if (warTap && e.type === "pointerup") klick(e.clientX, e.clientY);
+  }
+  dom.addEventListener("pointerup", pointerEnde);
+  dom.addEventListener("pointercancel", pointerEnde);
 
   // ————— Tastatur —————
   // Tippen in Formularfeldern darf die Kamera nicht bewegen ("Wanda" = WASD).
