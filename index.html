@@ -20,7 +20,8 @@
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
-  <canvas id="scene"></canvas>
+  <canvas id="scene" role="application" aria-label="3D-Rundgang durch die Galerie"></canvas>
+  <div id="sr-status" class="sr-only" role="status" aria-live="polite"></div>
 
   <!-- Eintritts-Overlay: die Galerie schimmert dahinter -->
   <div id="intro" class="intro">
@@ -44,6 +45,7 @@
   <header id="chrome-top" class="chrome chrome-top">
     <div class="wordmark">Galerie&nbsp;JP</div>
     <div class="chrome-top-rechts">
+      <button id="catalog-open" class="cart-btn" aria-label="Alle Werke anzeigen">Alle&nbsp;Werke</button>
       <button id="mute" class="mute-btn" aria-label="Ton ausschalten">🔊</button>
       <button id="cart-open" class="cart-btn" aria-label="Sammlung öffnen">
         Sammlung&nbsp;<span id="cart-count" class="cart-count">0</span>
@@ -59,16 +61,22 @@
   <div id="saal-caption" aria-hidden="true">
     <p class="eyebrow sc-saal">Saal I</p>
     <p class="sc-name">Moderne</p>
+    <p class="sc-desc"></p>
   </div>
 
   <!-- Werk-Detailpanel (Saaltext) -->
-  <aside id="artwork-panel" class="panel artwork-panel" aria-hidden="true">
+  <aside id="artwork-panel" class="panel artwork-panel" role="dialog" aria-hidden="true">
     <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="artwork" aria-label="Schließen">×</button>
+    <div class="aw-blaettern">
+      <button id="aw-prev" aria-label="Vorheriges Werk im Saal">‹</button>
+      <button id="aw-next" aria-label="Nächstes Werk im Saal">›</button>
+    </div>
     <p class="eyebrow" id="aw-room">Saal I — Moderne</p>
     <h2 class="aw-title" id="aw-title">Titel</h2>
     <p class="aw-artist" id="aw-artist">Künstler</p>
     <div class="rule"></div>
+    <img id="aw-bild" alt="" />
     <dl class="aw-meta">
       <div><dt>Technik</dt><dd id="aw-technique"></dd></div>
       <div><dt>Maße</dt><dd id="aw-dimensions"></dd></div>
@@ -81,6 +89,10 @@
       <button id="aw-add" class="btn-brass">In die Sammlung</button>
     </div>
     <button id="aw-stripe" class="btn-stripe hidden">Sofort erwerben</button>
+    <div class="aw-sekundaer">
+      <a id="aw-inquiry" class="aw-textlink hidden" href="#">Unverbindlich anfragen</a>
+      <button id="aw-share" class="aw-textlink">Link kopieren</button>
+    </div>
     <p class="aw-sold hidden" id="aw-sold"><span class="dot"></span>Verkauft</p>
     <ul class="aw-trust">
       <li>Signiertes Echtheitszertifikat</li>
@@ -89,8 +101,16 @@
     </ul>
   </aside>
 
+  <!-- Katalog: alle Werke als 2D-Übersicht -->
+  <aside id="catalog-panel" class="panel" role="dialog" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
+    <button class="panel-close" data-close="catalog" aria-label="Schließen">×</button>
+    <p class="eyebrow">Alle Werke</p>
+    <div id="catalog-grid" class="catalog-grid"></div>
+  </aside>
+
   <!-- Sammlung (Warenkorb) -->
-  <aside id="cart-panel" class="panel cart-panel" aria-hidden="true">
+  <aside id="cart-panel" class="panel cart-panel" role="dialog" aria-hidden="true">
     <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <button class="panel-close" data-close="cart" aria-label="Schließen">×</button>
     <p class="eyebrow">Ihre Sammlung</p>
@@ -138,6 +158,23 @@
         </ol>
         <button class="btn-brass" data-close="checkout">Zurück in die Galerie</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Rechtliches -->
+  <div class="legal-links">
+    <button data-legal="impressum">Impressum</button>
+    <span>·</span>
+    <button data-legal="datenschutz">Datenschutz</button>
+    <span>·</span>
+    <button data-legal="kontakt">Kontakt</button>
+  </div>
+  <div id="legal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button class="panel-close" data-close="legal" aria-label="Schließen">×</button>
+      <p class="eyebrow" id="legal-eyebrow">Impressum</p>
+      <h2 class="modal-title" id="legal-titel">Impressum</h2>
+      <div class="aw-desc" id="legal-text"></div>
     </div>
   </div>
 

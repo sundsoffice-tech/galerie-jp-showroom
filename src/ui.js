@@ -2,7 +2,7 @@
 // Saal-Blende mit Caption, Touch-Joystick und Stummschalter.
 // Jedes Werk ist ein Unikat: nur einmal sammelbar, nach Verkauf gesperrt.
 
-import { raeume, raumById, werkById, formatPreis, bildThumbnail, galerie } from "./katalog.js";
+import { raeume, raumById, werkById, werkeImRaum, formatPreis, bildThumbnail, galerie } from "./katalog.js";
 import * as klang from "./klang.js";
 import { machBottomSheet } from "./bottomsheet.js";
 import { IST_TOUCH } from "./geraet.js";
@@ -31,6 +31,12 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   }
 
   let offenesWerk = null;
+  let fokusVorher = null; // Tastatur-Fokus vor dem Öffnen eines Panels
+
+  // Screenreader-Statusmeldungen (aria-live)
+  function melde(text) {
+    $("sr-status").textContent = text;
+  }
 
   // ————— Hover-Label —————
   const hoverLabel = document.createElement("div");
@@ -72,16 +78,21 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   const caption = $("saal-caption");
   let captionTimer = null;
 
+  function zeigeSaalTitel(raum) {
+    caption.querySelector(".sc-saal").textContent = raum.saal;
+    caption.querySelector(".sc-name").textContent = raum.name;
+    caption.querySelector(".sc-desc").textContent = raum.beschreibung || "";
+    caption.classList.add("sichtbar");
+    clearTimeout(captionTimer);
+    captionTimer = setTimeout(() => caption.classList.remove("sichtbar"), 2400);
+  }
+
   function blendeZuSaal(raum, teleport) {
     fade.classList.add("dunkel");
     setTimeout(() => {
       teleport();
-      caption.querySelector(".sc-saal").textContent = raum.saal;
-      caption.querySelector(".sc-name").textContent = raum.name;
-      caption.classList.add("sichtbar");
+      zeigeSaalTitel(raum);
       fade.classList.remove("dunkel");
-      clearTimeout(captionTimer);
-      captionTimer = setTimeout(() => caption.classList.remove("sichtbar"), 2100);
     }, 380);
   }
 
@@ -103,14 +114,26 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   });
   muteAnzeige();
 
-  // ————— Saal-Navigation —————
+  // ————— Saal-Navigation (mit Verfügbar-Zähler) —————
   const nav = $("room-nav");
   raeume.forEach((raum, i) => {
     const b = document.createElement("button");
     b.textContent = raum.name;
+    b.title = raum.beschreibung || "";
+    const zaehler = document.createElement("span");
+    zaehler.className = "nav-count";
+    b.appendChild(zaehler);
     b.addEventListener("click", () => steuerungRef().zuRaum(i));
     nav.appendChild(b);
   });
+
+  function aktualisiereNavZaehler() {
+    raeume.forEach((raum, i) => {
+      const n = werkeImRaum(raum.id).filter((w) => !w.verkauft).length;
+      nav.children[i].querySelector(".nav-count").textContent = n;
+    });
+  }
+  aktualisiereNavZaehler();
 
   function markiereRaum(index) {
     [...nav.children].forEach((b, i) => {
@@ -131,6 +154,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   function oeffneWerk(werkId) {
     const werk = werkById(werkId);
     if (!werk) return;
+    const warZu = !panel.classList.contains("open");
     offenesWerk = werkId;
     const raum = raumById(werk.raum);
     $("aw-room").textContent = `${raum.saal} — ${raum.name}`;
@@ -141,11 +165,54 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("aw-year").textContent = werk.jahr;
     $("aw-desc").textContent = werk.beschreibung;
     $("aw-price").textContent = formatPreis(werk.preis);
+    $("aw-bild").src = bildThumbnail(werk);
+    $("aw-bild").alt = `${werk.titel}, ${werk.kuenstler}`;
+    // Anfrage-CTA per Mail (nur wenn eine Galerie-Adresse gepflegt ist)
+    const inquiry = $("aw-inquiry");
+    if (galerie.email) {
+      inquiry.classList.remove("hidden");
+      inquiry.href = `mailto:${galerie.email}?subject=${encodeURIComponent(
+        `Anfrage: ${werk.titel} — ${werk.kuenstler}`
+      )}`;
+    } else {
+      inquiry.classList.add("hidden");
+    }
+    // Deep-Link in die URL schreiben
+    history.replaceState(null, "", `#${werkId}`);
     aktualisiereKaufButton();
     if (!werkSheet.oeffne("peek")) panel.classList.add("open"); // Desktop/Landscape
     panel.setAttribute("aria-hidden", "false");
     steuerungRef().setzeSheetOffset(true);
+    if (warZu) {
+      fokusVorher = document.activeElement;
+      panel.querySelector(".panel-close").focus({ preventScroll: true });
+    }
   }
+
+  // Blättern: vor/zurück durch die Werke des aktuellen Saals
+  function blaettere(richtung) {
+    if (!offenesWerk) return;
+    const werk = werkById(offenesWerk);
+    const liste = werkeImRaum(werk.raum);
+    const i = liste.findIndex((w) => w.id === offenesWerk);
+    const ziel = liste[(i + richtung + liste.length) % liste.length];
+    if (ziel && ziel.id !== offenesWerk) steuerungRef().fokussiere(ziel.id);
+  }
+  $("aw-prev").addEventListener("click", () => blaettere(-1));
+  $("aw-next").addEventListener("click", () => blaettere(1));
+
+  // Deep-Link teilen
+  $("aw-share").addEventListener("click", async () => {
+    if (!offenesWerk) return;
+    const url = `${location.origin}${location.pathname}#${offenesWerk}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      $("aw-share").textContent = "Kopiert ✓";
+      setTimeout(() => ($("aw-share").textContent = "Link kopieren"), 1800);
+    } catch {
+      prompt("Link zum Werk:", url);
+    }
+  });
 
   function aktualisiereKaufButton() {
     if (!offenesWerk) return;
@@ -161,6 +228,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       const drin = sammlung.includes(werk.id);
       btn.disabled = drin;
       btn.textContent = drin ? "In Ihrer Sammlung" : "In die Sammlung";
+      // „Preis auf Anfrage": kein Warenkorb, nur der Anfrage-Weg
+      btn.classList.toggle("hidden", werk.preis == null);
     }
     // Stripe Payment Link (Stufe B): Sofortkauf, wenn ein Link gepflegt ist.
     // Der Link ist im Stripe-Dashboard auf 1 Zahlung limitiert (Unikat-Schutz).
@@ -182,6 +251,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     aktualisiereKaufButton();
     renderSammlung(true);
     klang.sammelKlang();
+    melde(`„${werk.titel}" in die Sammlung gelegt.`);
   });
 
   function schliesseWerkPanel() {
@@ -191,6 +261,9 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     panel.setAttribute("aria-hidden", "true");
     steuerungRef().fokusVerlassen();
     steuerungRef().setzeSheetOffset(false);
+    history.replaceState(null, "", location.pathname + location.search);
+    if (fokusVorher?.focus) fokusVorher.focus({ preventScroll: true });
+    fokusVorher = null;
   }
 
   // ————— Sammlung (Warenkorb) —————
@@ -263,8 +336,83 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("checkout-open").disabled = !sammlung.length;
   }
 
+  // ————— Katalog: alle Werke als 2D-Übersicht —————
+  const catalogPanel = $("catalog-panel");
+  const catalogSheet = machBottomSheet(catalogPanel, { peek: 0.88 });
+
+  function renderKatalog() {
+    const grid = $("catalog-grid");
+    grid.innerHTML = "";
+    raeume.forEach((raum) => {
+      werkeImRaum(raum.id).forEach((werk) => {
+        const el = document.createElement("button");
+        el.className = "catalog-item";
+        el.innerHTML = `
+          <img alt="" />
+          <div class="ci-text">
+            <div class="ci-titel">${werk.titel}</div>
+            <div class="ci-sub">${werk.kuenstler} · ${raum.name}</div>
+            <div class="ci-preis ${werk.verkauft ? "verkauft" : ""}">${werk.verkauft ? "Verkauft" : formatPreis(werk.preis)}</div>
+          </div>`;
+        el.querySelector("img").src = bildThumbnail(werk);
+        el.addEventListener("click", () => {
+          schliesseKatalog();
+          steuerungRef().fokussiere(werk.id);
+        });
+        grid.appendChild(el);
+      });
+    });
+  }
+
+  function schliesseKatalog() {
+    catalogSheet.schliesse();
+    catalogPanel.classList.remove("open");
+    catalogPanel.setAttribute("aria-hidden", "true");
+  }
+
+  $("catalog-open").addEventListener("click", () => {
+    renderKatalog();
+    if (!catalogSheet.oeffne("voll")) catalogPanel.classList.add("open");
+    catalogPanel.setAttribute("aria-hidden", "false");
+    fokusVorher = document.activeElement;
+    catalogPanel.querySelector(".panel-close").focus({ preventScroll: true });
+  });
+
+  // ————— Rechtliches —————
+  const legal = $("legal");
+  const LEGAL_TEXTE = {
+    impressum: {
+      titel: "Impressum",
+      text: "Angaben gemäß § 5 DDG.\n\n[Name der Galerie]\n[Inhaber:in]\n[Straße Hausnummer]\n[PLZ Ort]\n\nTelefon: [Nummer]\nE-Mail: [Adresse]\nUSt-IdNr.: [Nummer]\n\nDiese Angaben werden vor dem Go-Live durch die Galerie ergänzt.",
+    },
+    datenschutz: {
+      titel: "Datenschutz",
+      text: "Beim Absenden einer Reservierung werden Ihre Angaben (Name, E-Mail, optional Telefon und Nachricht) zur Bearbeitung Ihrer Anfrage per Web3Forms (form-to-email-Dienst) an die Galerie übermittelt (Art. 6 Abs. 1 lit. b DSGVO). Es werden keine Tracking-Cookies gesetzt; Ihre Sammlung wird nur lokal in Ihrem Browser gespeichert.\n\n[Vollständige Datenschutzerklärung wird vor dem Go-Live durch die Galerie ergänzt.]",
+    },
+    kontakt: {
+      titel: "Kontakt",
+      text: "Wir freuen uns auf Ihre Nachricht.\n\n[E-Mail und Telefonnummer der Galerie — werden vor dem Go-Live ergänzt.]\n\nBesichtigungen einzelner Werke sind nach Vereinbarung jederzeit möglich.",
+    },
+  };
+  document.querySelectorAll("[data-legal]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const eintrag = LEGAL_TEXTE[b.dataset.legal];
+      $("legal-eyebrow").textContent = "Rechtliches";
+      $("legal-titel").textContent = eintrag.titel;
+      $("legal-text").textContent = eintrag.text;
+      legal.classList.remove("hidden");
+    })
+  );
+  legal.addEventListener("click", (e) => {
+    if (e.target === legal) legal.classList.add("hidden");
+  });
+
   // ————— Kasse —————
   const checkout = $("checkout");
+  // Backdrop-Klick schließt das Modal
+  checkout.addEventListener("click", (e) => {
+    if (e.target === checkout) checkout.classList.add("hidden");
+  });
 
   $("checkout-open").addEventListener("click", () => {
     $("checkout-total").textContent = formatPreis(summe());
@@ -364,9 +512,11 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     speichereSammlung();
     renderSammlung();
     aktualisiereKaufButton();
+    aktualisiereNavZaehler();
     form.reset();
     $("checkout-form-view").classList.add("hidden");
     $("checkout-success-view").classList.remove("hidden");
+    melde("Reservierung eingegangen. Die Galerie meldet sich persönlich.");
   });
 
   // ————— Öffnen / Schließen —————
@@ -382,13 +532,23 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       const ziel = b.dataset.close;
       if (ziel === "artwork") schliesseWerkPanel();
       if (ziel === "cart") schliesseCart();
+      if (ziel === "catalog") schliesseKatalog();
       if (ziel === "checkout") checkout.classList.add("hidden");
+      if (ziel === "legal") legal.classList.add("hidden");
     })
   );
 
+  // Klick/Tipp in die Szene schließt offene Übersichts-Panels
+  document.getElementById("scene").addEventListener("pointerdown", () => {
+    if (cartPanel.classList.contains("open")) schliesseCart();
+    if (catalogPanel.classList.contains("open")) schliesseKatalog();
+  });
+
   window.addEventListener("keydown", (e) => {
     if (e.code !== "Escape") return;
-    if (!checkout.classList.contains("hidden")) checkout.classList.add("hidden");
+    if (!legal.classList.contains("hidden")) legal.classList.add("hidden");
+    else if (!checkout.classList.contains("hidden")) checkout.classList.add("hidden");
+    else if (catalogPanel.classList.contains("open")) schliesseKatalog();
     else if (cartPanel.classList.contains("open")) schliesseCart();
     else if (panel.classList.contains("open")) schliesseWerkPanel();
   });
@@ -401,6 +561,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     zeigeHover,
     markiereRaum,
     blendeZuSaal,
+    zeigeSaalTitel,
     introAusblenden,
     zeigeChrome,
   };

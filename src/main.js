@@ -104,7 +104,16 @@ const intro = erstelleIntro({
   ui,
 });
 
-document.getElementById("enter").addEventListener("click", () => intro.eintreten());
+const enterBtn = document.getElementById("enter");
+enterBtn.focus({ preventScroll: true }); // Enter-Taste startet den Rundgang sofort
+enterBtn.addEventListener("click", () => {
+  intro.eintreten();
+  // Deep-Link (#w-005): nach dem Eintritt direkt vor das Werk fahren
+  const zielId = location.hash.slice(1);
+  if (zielId && werke.some((w) => w.id === zielId)) {
+    setTimeout(() => steuerung.fokussiere(zielId), 2800);
+  }
+});
 
 // Touch: fester Joystick links unten, erscheint mit dem Eintritt
 const joystick = IST_TOUCH ? erstelleJoystick(steuerung.joy) : null;
@@ -157,9 +166,12 @@ function loop() {
 
   const raum = steuerung.aktuellerRaum();
   if (raum !== letzterRaum) {
+    const erster = letzterRaum === -1;
     letzterRaum = raum;
     ui.markiereRaum(raum);
     klang.setzeRaum(raeume[raum].id);
+    // Saaltitel beim Durchschreiten einblenden (nicht beim Start)
+    if (!erster && !introAktiv) ui.zeigeSaalTitel(raeume[raum]);
   }
 
   // Frametime-Wächter: nur abstufen, nie zurück (kein Qualitäts-Flackern)

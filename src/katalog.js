@@ -31,6 +31,7 @@ export function raumById(id) {
 }
 
 export function formatPreis(betrag) {
+  if (betrag == null) return "Preis auf Anfrage"; // im High-End-Segment üblich
   return preisFormat.format(betrag);
 }
 

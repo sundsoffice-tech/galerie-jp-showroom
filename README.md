@@ -1,83 +1,97 @@
 # Galerie JP — Virtueller 3D-Showroom
 
 Begehbarer Online-Showroom für einen Kunsthändler: First-Person-Rundgang
-durch Themensäle (Three.js/WebGL), jedes Werk ist ein **Unikat** und direkt
-über den integrierten Warenkorb erwerbbar.
+durch Themensäle (Three.js/WebGL) in der Inszenierung „Privatführung nach
+Schließung" — dunkle Säle, jedes Werk in seiner warmen Lichtinsel. Jedes
+Werk ist ein **Unikat** und direkt über die integrierte Reservierung
+(optional: Stripe-Sofortkauf) erwerbbar.
 
-## Starten
+**Live:** https://sundsoffice-tech.github.io/galerie-jp-showroom/
+
+## Starten & Deployen
 
 ```bash
 npm install
-npm run dev        # Entwicklung: http://localhost:5173
+npm run dev        # Entwicklung: http://localhost:5173 (oder nächster freier Port)
 npm run build      # Produktions-Build nach dist/
 ```
 
-## Das System: Werke pflegen ohne 3D-Kenntnisse
+- **GitHub Pages:** Repo `sundsoffice-tech/galerie-jp-showroom`. Der Workflow
+  `.github/workflows/deploy.yml` deployt bei jedem Push automatisch —
+  **sobald das GitHub-Billing-Problem des Accounts behoben ist** (aktuell:
+  „account locked due to a billing issue" → github.com → Settings → Billing).
+  Bis dahin manuell: `npm run build`, dann `dist/` auf den Branch `gh-pages`
+  pushen (`.nojekyll` nicht vergessen) und ggf. per
+  `gh api repos/<repo>/pages/builds -X POST` einen Build anstoßen.
+- **Netlify (Alternative):** `netlify.toml` liegt bereit (inkl. CSP-Header
+  für Web3Forms). Repo importieren, fertig.
+- Mobil-Vorschau für Demos: `/mobil-test.html` (Telefon-Rahmen) bzw.
+  `/?touch=1` erzwingt das Touch-Layout am Desktop.
+
+## Das System: Werke pflegen ohne Technik-Kenntnisse
 
 Alles Inhaltliche liegt in **einer Datei**: `src/data/werke.json`.
+Dazu gibt es die **Verwaltungs-Seite `verwaltung.html`** (Doppelklick genügt,
+läuft ohne Server): `werke.json` hineinziehen → Werke/Säle in Formularen
+anlegen, bearbeiten, duplizieren, löschen (mit Validierung und
+Kapazitäts-Warnung) → neue `werke.json` herunterladen → auf GitHub
+`src/data/werke.json` ersetzen („Add file → Upload files") → Auto-Deploy.
+Die Datei liegt bewusst außerhalb des Builds und wird **nie mit deployt**.
 
-### Neues Werk hinzufügen
-
-1. Werkfoto (JPG/PNG, gerade fotografiert, ohne Rahmen) in den Ordner
-   `public/werke/` legen, z. B. `public/werke/w-013.jpg`.
-2. In `werke.json` unter `"werke"` einen Eintrag ergänzen:
+### Werk-Felder
 
 ```json
 {
-  "id": "w-013",
-  "raum": "moderne",
-  "titel": "Neues Werk",
-  "kuenstler": "Vorname Nachname",
-  "jahr": 2026,
-  "technik": "Öl auf Leinwand",
-  "breite_cm": 120,
-  "hoehe_cm": 90,
-  "preis": 7500,
-  "bild": "w-013.jpg",
-  "verkauft": false,
-  "beschreibung": "Kurzer Saaltext zum Werk."
+  "id": "w-013",            // eindeutig; Verwaltung vergibt automatisch
+  "raum": "moderne",        // Saal-ID
+  "titel": "…", "kuenstler": "…", "jahr": 2026, "technik": "…",
+  "breite_cm": 120, "hoehe_cm": 90,   // bestimmt die reale Größe an der Wand
+  "preis": 7500,            // null = „Preis auf Anfrage" (nur Anfrage-Weg)
+  "bild": "w-013.jpg",      // Datei in public/werke/; null = stilechter Platzhalter
+  "verkauft": false,        // true = roter Punkt, nicht mehr kaufbar
+  "beschreibung": "Saaltext …",
+  "stripeLink": "https://buy.stripe.com/…"   // optional, s. Stripe Stufe B
 }
 ```
 
-Mehr ist nicht nötig: Die Galerie **hängt die Wände automatisch** um
-(Position, Rahmen, Lichthof, Plakette mit Preis). Die Werkgröße in cm
-bestimmt die reale Größe an der Wand.
-
-- `"bild": null` → das System erzeugt automatisch einen stilechten
-  Platzhalter passend zum Saal-Thema (bis das echte Foto da ist).
-- `"verkauft": true` → rotes Pünktchen auf der Plakette, Werk ist nicht
-  mehr kaufbar (wie in einer echten Galerie bleibt es sichtbar hängen).
-- Werk entfernen = Eintrag löschen. Verschieben = `"raum"` ändern.
+Die Galerie **hängt die Wände automatisch** (Position, Rahmen, Lichtinsel,
+Strahler, Plakette). Pro Saal: 6 Plätze an den Längswänden, +2 an der
+Stirnwand im ersten/letzten Saal; Überzählige werden mit Konsolen-Hinweis
+nicht gehängt.
 
 ### Optik & Verhalten anpassen
 
-Alle Stellschrauben (Raumgröße, Wand-/Rahmenfarben, Licht, Gehtempo,
-Plätze pro Wand …) stehen kommentiert in **`src/konfig.js`** — dort ändern,
-nicht im 3D-Code. Der Galeriename kommt aus `werke.json` (`galerie.name`)
-und erscheint automatisch in Titel, Wortmarke und Intro.
+Alle Stellschrauben stehen kommentiert in **`src/konfig.js`**: Raummaße,
+Licht-Inszenierung, Saal-Persönlichkeiten (Wandfarben, Lichtfarbe je Saal),
+Bewegungsgefühl (Tempo, Trägheit, Head-Bob, FOV-Dramaturgie), Klang,
+Mobile-Parameter. Galeriename/E-Mail/Währung stehen in `werke.json`.
 
-### Säle
+## Kauf-Flow
 
-Die Themensäle stehen ebenfalls in `werke.json` unter `"raeume"`.
-Pro Saal passen derzeit bis zu 8 Werke (3 Nordwand, 3 Südwand, 2 Stirnwand
-im ersten/letzten Saal); überzählige Werke werden mit Hinweis in der
-Konsole nicht gehängt.
-
-## Kauf-Flow (Stand jetzt)
-
-Warenkorb („Sammlung") → Kasse → **Demo-Reservierung**: Käuferdaten werden
-abgefragt, die Werke als verkauft markiert (im Browser gespeichert).
-
-Für den Echtbetrieb ist die Stelle für **Stripe Checkout** vorbereitet:
-in `src/ui.js` im Submit-Handler des Checkout-Formulars (Kommentar
-`>>> Hier wird später Stripe Checkout eingebunden <<<`). Nötig dafür:
-Stripe-Account des Händlers + ein kleines Backend/Serverless-Function für
-die Checkout-Session und das serverseitige Verkauft-Markieren.
+1. **Reservierung (aktiv):** Sammlung → „Erwerben" → Formular. Mit
+   gepflegtem `galerie.web3formsKey` (kostenlos von web3forms.com, Key darf
+   committed werden) geht eine **echte E-Mail** an die Galerie — Reply-To ist
+   der Kunde. Leerer Key = Demo-Modus. **Im Browser testen, nie per curl.**
+2. **Stripe Stufe B (vorbereitet):** Im Stripe-Dashboard je Werk einen
+   Payment Link anlegen mit **„Limit the number of payments" = 1**
+   (harter Unikat-Schutz) und als success-URL `…/?erworben=w-005` setzen.
+   Link in der Verwaltung beim Werk eintragen → im Panel erscheint
+   „Sofort erwerben". Nach Kauf markiert die Galerie das Werk in der
+   Verwaltung als verkauft.
+3. **Stufe C (bei Bedarf):** Serverless-Checkout + Webhook, siehe
+   Netlify-Functions-Pfad — erst sinnvoll ab vielen Online-Verkäufen.
 
 ## Technik
 
-- Vite + Three.js, kein Framework, keine weiteren Abhängigkeiten
-- Prozedural gebaute Galerie (Räume, Boden, Licht) aus den Katalogdaten
-- Steuerung: Ziehen = Umsehen, WASD/Pfeile oder Klick auf den Boden =
-  Gehen, Klick auf Werk = Kamerafahrt + Saaltext-Panel, ESC = schließen
-- Läuft auf Desktop und Mobil (Touch)
+- Vite + Three.js, Vanilla JS, keine weiteren Laufzeit-Abhängigkeiten
+- Alles prozedural: Parkett/Putz/Licht/Schatten/Plaketten als
+  Canvas-Texturen, Ambient-Sound/Schritte/Hall als WebAudio-Synthese
+- Module: `katalog` (Daten) · `szene` (Architektur+Hängung) · `beleuchtung`
+  · `moebel` · `texturen` · `steuerung` · `intro` · `klang` · `ui`
+  · `geraet`/`joystick`/`bottomsheet` (Mobile) · `konfig`
+- Qualitätsstufen: Tier A (Desktop: Bloom, Museumsglas, Physical-Parkett),
+  Tier B (Touch) + Frametime-Wächter, der nur abstuft, nie flackert
+- Steuerung: Ziehen = Umsehen · WASD/Klick auf Boden = Gehen · Klick auf
+  Werk = Bogen-Kamerafahrt + Panel (2. Klick = Nahzoom) · ESC = schließen ·
+  Touch: Joystick + Tippen, Bottom-Sheets, Blick-Label
+- Deep-Links: `#w-005` fährt nach dem Eintreten direkt vor das Werk

@@ -169,6 +169,29 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, kunstw
   function fokussiere(werkId) {
     const e = kunstwerke.get(werkId);
     if (!e) return;
+
+    // Zweiter Klick auf das fokussierte Werk: Nahzoom auf die Textur
+    if (fokus === werkId && !tween && fokusStand) {
+      const nahPunkt = new THREE.Vector3();
+      e.flaeche.getWorldPosition(nahPunkt);
+      const aktuell = camera.position.distanceTo(nahPunkt);
+      const nah = nahPunkt.clone().addScaledVector(e.normal, Math.max(aktuell * 0.5, 0.95));
+      nah.y = camera.position.y;
+      tween = {
+        t: 0,
+        dauer: REDUZIERTE_BEWEGUNG ? 0.15 : 0.6,
+        p0: camera.position.clone(),
+        p1: camera.position.clone().lerp(nah, 0.5),
+        p2: nah,
+        vonYaw: yaw,
+        nachYaw: yaw,
+        vonPitch: pitch,
+        nachPitch: pitch,
+      };
+      fokusStand = nah.clone();
+      return;
+    }
+
     fokus = werkId;
     gehZiel = null;
     vel.set(0, 0);
