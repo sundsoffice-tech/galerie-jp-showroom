@@ -364,6 +364,11 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     const grid = $("catalog-grid");
     grid.innerHTML = "";
     raeume.forEach((raum) => {
+      // Saal-Zwischenüberschrift wie im Museums-Katalog
+      const kopf = document.createElement("p");
+      kopf.className = "catalog-saal eyebrow";
+      kopf.textContent = `${raum.saal} — ${raum.name}`;
+      grid.appendChild(kopf);
       werkeImRaum(raum.id).forEach((werk) => {
         const el = document.createElement("button");
         el.className = "catalog-item";
@@ -393,6 +398,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   }
 
   $("catalog-open").addEventListener("click", () => {
+    if (panel.classList.contains("open")) schliesseWerkPanel(); // ein Panel rechts
     renderKatalog();
     if (!catalogSheet.oeffne("voll")) catalogPanel.classList.add("open");
     catalogPanel.setAttribute("aria-hidden", "false");
@@ -550,6 +556,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   // ————— Öffnen / Schließen —————
   $("cart-open").addEventListener("click", () => {
+    if (panel.classList.contains("open")) schliesseWerkPanel(); // ein Panel rechts
+    if (catalogPanel.classList.contains("open")) schliesseKatalog();
     renderSammlung();
     if (!cartSheet.oeffne("voll")) cartPanel.classList.add("open");
     else backdrop.classList.add("visible");

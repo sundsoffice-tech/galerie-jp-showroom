@@ -75,7 +75,7 @@ export function erstelleStrahler(scene, zielPunkt, normal, breite, registriere, 
     opacity: KONFIG.licht.kegelDeckkraft,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide, // halbiert den Overdraw; von außen identisch
   });
   const kegel = new THREE.Mesh(kegelGeo, kegelMat);
   kegel.position.set(fx + zuWerk.x / 2, fy + zuWerk.y / 2, fz + zuWerk.z / 2);
@@ -91,16 +91,17 @@ export function erstelleStrahler(scene, zielPunkt, normal, breite, registriere, 
 export function erstelleBank(scene, x, z, farbeHex) {
   const bank = new THREE.Group();
   const lederTex = alsTextur(lederCanvas("#" + farbeHex.toString(16).padStart(6, "0")));
+  // mattes, sattes Leder — glänzendes Polster liest sich sofort als Plastik
   const sitz = new THREE.Mesh(
-    new THREE.BoxGeometry(1.7, 0.09, 0.5),
-    new THREE.MeshStandardMaterial({ map: lederTex, roughness: 0.78, envMapIntensity: 0.25 })
+    new THREE.BoxGeometry(1.6, 0.075, 0.46),
+    new THREE.MeshStandardMaterial({ map: lederTex, roughness: 0.88, envMapIntensity: 0.12 })
   );
-  sitz.position.y = 0.46;
+  sitz.position.y = 0.45;
   bank.add(sitz);
-  const kufenMat = new THREE.MeshStandardMaterial({ color: 0x241a10, roughness: 0.7, envMapIntensity: 0.25 });
-  for (const sx of [-0.72, 0.72]) {
-    const kufe = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.5), kufenMat);
-    kufe.position.set(sx, 0.21, 0);
+  const kufenMat = new THREE.MeshStandardMaterial({ color: 0x1d150c, roughness: 0.75, envMapIntensity: 0.15 });
+  for (const sx of [-0.68, 0.68]) {
+    const kufe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.41, 0.44), kufenMat);
+    kufe.position.set(sx, 0.205, 0);
     bank.add(kufe);
   }
   const schatten = new THREE.Mesh(

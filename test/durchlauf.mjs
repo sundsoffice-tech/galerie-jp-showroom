@@ -141,18 +141,29 @@ await pruefe("Katalog-Klick über Säle hinweg wechselt den Saal", async () => {
   return "Blende + Teleport + Fokus in Saal I";
 });
 
-// 6. Tastatur darf Formulare nicht stören (Regressionstest zum Review-Fund)
+// 6. Tastatur darf Formulare nicht stören (Regressionstest zum Review-Fund):
+// echtes Checkout öffnen, ins sichtbare Namensfeld „Wanda" tippen —
+// W/A/S/D dürfen die (freie, nicht fokussierte) Kamera nicht bewegen.
 await pruefe("Tippen im Formular bewegt die Kamera nicht", async () => {
-  await seite.click("#cart-open");
-  await seite.waitForTimeout(400);
-  const vor = await seite.evaluate(() => window.__galerie.szene.camera.position.x);
-  await seite.evaluate(() => {
-    document.querySelector('#checkout-form input[name="name"]')?.focus();
-  });
-  await seite.keyboard.type("Wanda Sasser");
+  await seite.click("#catalog-open");
   await seite.waitForTimeout(700);
+  await seite.locator(".catalog-item").nth(1).click(); // verfügbares Werk
+  await seite.waitForTimeout(2600);
+  await seite.click("#aw-add");
+  await seite.waitForTimeout(300);
+  await seite.keyboard.press("Escape"); // Panel zu — Kamera wieder frei
+  await seite.waitForTimeout(500);
+  await seite.click("#cart-open");
+  await seite.waitForTimeout(600);
+  await seite.click("#checkout-open");
+  await seite.waitForTimeout(500);
+  const vor = await seite.evaluate(() => window.__galerie.szene.camera.position.x);
+  await seite.click('#checkout-form input[name="name"]');
+  await seite.keyboard.type("Wanda Sasser");
+  await seite.waitForTimeout(600);
   const nach = await seite.evaluate(() => window.__galerie.szene.camera.position.x);
-  if (Math.abs(nach - vor) > 0.01) throw new Error(`Kamera wanderte um ${(nach - vor).toFixed(2)}`);
+  await seite.keyboard.press("Escape");
+  if (Math.abs(nach - vor) > 0.02) throw new Error(`Kamera wanderte um ${(nach - vor).toFixed(2)}`);
   return "Kamera unbewegt";
 });
 

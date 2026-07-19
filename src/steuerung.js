@@ -287,6 +287,10 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     if (sheetOffsetAktiv && istSheetLayout()) {
       // Werk in die freie Zone über dem Peek-Sheet (58 %) heben
       camera.setViewOffset(w, h, 0, h * 0.24, w, h);
+    } else if (sheetOffsetAktiv && w >= 900) {
+      // Desktop: das Panel (26rem rechts) verdeckt sonst das halbe Werk —
+      // Bildinhalt um die halbe Panelbreite in die freie Fläche rücken
+      camera.setViewOffset(w, h, 208, 0, w, h);
     } else {
       camera.clearViewOffset();
     }

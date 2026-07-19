@@ -447,6 +447,36 @@ html.touch .hint-touch { display: inline; }
   margin-top: 0.9rem;
 }
 
+/* Saaltext-Choreografie: die Zeilen treten gestaffelt ein — wie ein
+   Blick, der erst den Titel, dann die Angaben erfasst */
+@keyframes aw-eintritt {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.artwork-panel.open > .eyebrow,
+.artwork-panel.open .aw-title,
+.artwork-panel.open .aw-artist,
+.artwork-panel.open #aw-bild,
+.artwork-panel.open .aw-meta,
+.artwork-panel.open .aw-desc,
+.artwork-panel.open .aw-unikat,
+.artwork-panel.open .aw-buy,
+.artwork-panel.open .aw-trust {
+  animation: aw-eintritt 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.artwork-panel.open > .eyebrow { animation-delay: 0.1s; }
+.artwork-panel.open .aw-title { animation-delay: 0.16s; }
+.artwork-panel.open .aw-artist { animation-delay: 0.22s; }
+.artwork-panel.open #aw-bild { animation-delay: 0.28s; }
+.artwork-panel.open .aw-meta { animation-delay: 0.34s; }
+.artwork-panel.open .aw-desc { animation-delay: 0.4s; }
+.artwork-panel.open .aw-unikat { animation-delay: 0.46s; }
+.artwork-panel.open .aw-buy { animation-delay: 0.5s; }
+.artwork-panel.open .aw-trust { animation-delay: 0.56s; }
+@media (prefers-reduced-motion: reduce) {
+  .artwork-panel.open > *, .artwork-panel.open #aw-bild { animation: none !important; }
+}
+
 .aw-artist {
   font-family: var(--serif);
   font-style: italic;
@@ -726,10 +756,20 @@ html.touch .hint-touch { display: inline; }
   transition: border-color 0.2s ease;
 }
 .catalog-item:hover { border-color: var(--brass); }
+.catalog-saal {
+  grid-column: 1 / -1;
+  margin-top: 0.9rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
+}
+.catalog-saal:first-child { margin-top: 0; }
 .catalog-item img {
   width: 100%;
   aspect-ratio: 1;
-  object-fit: cover;
+  /* Kunst wird nie beschnitten — das Werk schwebt vollständig im Quadrat */
+  object-fit: contain;
+  padding: 0.55rem;
+  background: #131009;
   display: block;
 }
 .catalog-item .ci-text { padding: 0.6rem 0.7rem 0.7rem; }
