@@ -1,8 +1,9 @@
-// UI — Saaltext-Panel, Sammlung (Warenkorb), Kasse, Saal-Navigation.
-// Jedes Werk ist ein Unikat: es kann nur einmal in die Sammlung,
-// und nach dem Erwerb ist es dauerhaft als „Verkauft“ markiert.
+// UI — Saaltext-Panel, Sammlung (Warenkorb), Kasse, Saal-Navigation,
+// Saal-Blende mit Caption, Touch-Joystick und Stummschalter.
+// Jedes Werk ist ein Unikat: nur einmal sammelbar, nach Verkauf gesperrt.
 
 import { raeume, raumById, werkById, formatPreis, bildThumbnail } from "./katalog.js";
+import * as klang from "./klang.js";
 
 const LS_SAMMLUNG = "galerie-jp-sammlung";
 const LS_VERKAUFT = "galerie-jp-verkauft";
@@ -47,6 +48,64 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     hoverLabel.style.top = `${y}px`;
     hoverLabel.classList.add("visible");
   }
+
+  // ————— Intro / Chrome —————
+  function introAusblenden() {
+    const intro = $("intro");
+    intro.classList.add("leaving");
+    setTimeout(() => intro.remove(), 1200);
+    document.getElementById("scene").classList.add("walk");
+  }
+
+  function zeigeChrome(teil) {
+    if (teil === "top") $("chrome-top").classList.add("sichtbar");
+    if (teil === "nav") $("room-nav").classList.add("sichtbar");
+  }
+
+  // ————— Saal-Blende mit Caption —————
+  const fade = $("fade");
+  const caption = $("saal-caption");
+  let captionTimer = null;
+
+  function blendeZuSaal(raum, teleport) {
+    fade.classList.add("dunkel");
+    setTimeout(() => {
+      teleport();
+      caption.querySelector(".sc-saal").textContent = raum.saal;
+      caption.querySelector(".sc-name").textContent = raum.name;
+      caption.classList.add("sichtbar");
+      fade.classList.remove("dunkel");
+      clearTimeout(captionTimer);
+      captionTimer = setTimeout(() => caption.classList.remove("sichtbar"), 2100);
+    }, 380);
+  }
+
+  // ————— Touch-Joystick —————
+  const joy = $("joystick");
+  const joyKnauf = joy.querySelector(".joy-knauf");
+
+  function joystick(aktiv, bx, by, dx, dy) {
+    if (!aktiv) {
+      joy.classList.remove("sichtbar");
+      return;
+    }
+    joy.classList.add("sichtbar");
+    joy.style.left = `${bx}px`;
+    joy.style.top = `${by}px`;
+    joyKnauf.style.transform = `translate(${dx * 0.5}px, ${dy * 0.5}px)`;
+  }
+
+  // ————— Stummschalter —————
+  const muteBtn = $("mute");
+  function muteAnzeige() {
+    muteBtn.textContent = klang.istStumm() ? "🔇" : "🔊";
+    muteBtn.setAttribute("aria-label", klang.istStumm() ? "Ton einschalten" : "Ton ausschalten");
+  }
+  muteBtn.addEventListener("click", () => {
+    klang.schalteStumm();
+    muteAnzeige();
+  });
+  muteAnzeige();
 
   // ————— Saal-Navigation —————
   const nav = $("room-nav");
@@ -106,7 +165,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     sammlung.push(werk.id);
     speichereSammlung();
     aktualisiereKaufButton();
-    renderSammlung();
+    renderSammlung(true);
+    klang.sammelKlang();
   });
 
   function schliesseWerkPanel() {
@@ -127,8 +187,14 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     return sammlung.reduce((s, id) => s + werkById(id).preis, 0);
   }
 
-  function renderSammlung() {
-    $("cart-count").textContent = sammlung.length;
+  function renderSammlung(bump = false) {
+    const zaehler = $("cart-count");
+    zaehler.textContent = sammlung.length;
+    if (bump) {
+      zaehler.classList.remove("bump");
+      void zaehler.offsetWidth;
+      zaehler.classList.add("bump");
+    }
     const wrap = $("cart-items");
     wrap.innerHTML = "";
     if (!sammlung.length) {
@@ -144,6 +210,10 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       const img = document.createElement("img");
       img.src = bildThumbnail(werk);
       img.alt = werk.titel;
+      img.addEventListener("click", () => {
+        cartPanel.classList.remove("open");
+        steuerungRef().fokussiere(id);
+      });
       const mitte = document.createElement("div");
       mitte.innerHTML = `<div class="cart-item-title">${werk.titel}</div><div class="cart-item-artist">${werk.kuenstler}, Unikat</div>`;
       const rechts = document.createElement("div");
@@ -170,6 +240,16 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   $("checkout-open").addEventListener("click", () => {
     $("checkout-total").textContent = formatPreis(summe());
+    // Reservierte Werke im Modal auflisten
+    const liste = $("checkout-items");
+    liste.innerHTML = "";
+    sammlung.forEach((id) => {
+      const werk = werkById(id);
+      const zeile = document.createElement("div");
+      zeile.className = "checkout-zeile";
+      zeile.innerHTML = `<span>${werk.titel}, ${werk.kuenstler}</span><span>${formatPreis(werk.preis)}</span>`;
+      liste.appendChild(zeile);
+    });
     $("checkout-form-view").classList.remove("hidden");
     $("checkout-success-view").classList.add("hidden");
     checkout.classList.remove("hidden");
@@ -177,7 +257,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   $("checkout-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    // >>> Hier wird später Stripe Checkout eingebunden. <<<
+    // >>> Hier wird später Stripe Checkout / Web3Forms eingebunden. <<<
     // Demo: Werke als verkauft markieren und Bestätigung zeigen.
     const verkaufte = ladeVerkaufte();
     sammlung.forEach((id) => {
@@ -228,5 +308,9 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     schliesseWerkPanel,
     zeigeHover,
     markiereRaum,
+    blendeZuSaal,
+    joystick,
+    introAusblenden,
+    zeigeChrome,
   };
 }

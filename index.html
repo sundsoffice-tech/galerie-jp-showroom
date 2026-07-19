@@ -2,8 +2,13 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Galerie JP — Virtueller Showroom</title>
+  <meta name="description" content="Begehbarer 3D-Showroom — ausgewählte Unikate aus Malerei, Abstraktion und Fotografie, direkt erwerbbar." />
+  <meta name="theme-color" content="#0c0b09" />
+  <meta property="og:title" content="Galerie JP — Virtueller Showroom" />
+  <meta property="og:description" content="Drei Säle, ausgewählte Unikate — ein begehbarer Galerie-Rundgang im Browser." />
+  <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Archivo:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -12,7 +17,7 @@
 <body>
   <canvas id="scene"></canvas>
 
-  <!-- Eintritts-Overlay -->
+  <!-- Eintritts-Overlay: die Galerie schimmert dahinter -->
   <div id="intro" class="intro">
     <div class="intro-inner">
       <p class="eyebrow">Virtueller Showroom</p>
@@ -20,25 +25,42 @@
       <p class="intro-sub">Drei Säle. Ausgewählte Werke. Direkt erwerbbar.</p>
       <button id="enter" class="btn-brass">Eintreten</button>
       <div class="intro-hints">
-        <span><b>Ziehen</b> zum Umsehen</span>
-        <span class="hint-sep">·</span>
-        <span><b>W A S D</b> oder <b>Klick auf den Boden</b> zum Gehen</span>
-        <span class="hint-sep">·</span>
-        <span><b>Klick auf ein Werk</b> für Details &amp; Kauf</span>
+        <span class="hint-desktop"><b>Ziehen</b> zum Umsehen</span>
+        <span class="hint-sep hint-desktop">·</span>
+        <span class="hint-desktop"><b>W A S D</b> oder <b>Klick auf den Boden</b> zum Gehen</span>
+        <span class="hint-sep hint-desktop">·</span>
+        <span class="hint-desktop"><b>Klick auf ein Werk</b> für Details &amp; Kauf</span>
+        <span class="hint-touch"><b>Links wischen</b> zum Gehen · <b>Rechts wischen</b> zum Umsehen · <b>Tippen</b> für Details</span>
       </div>
     </div>
   </div>
 
   <!-- Obere Leiste -->
-  <header id="chrome-top" class="chrome chrome-top hidden">
+  <header id="chrome-top" class="chrome chrome-top">
     <div class="wordmark">Galerie&nbsp;JP</div>
-    <button id="cart-open" class="cart-btn" aria-label="Warenkorb öffnen">
-      Sammlung&nbsp;<span id="cart-count" class="cart-count">0</span>
-    </button>
+    <div class="chrome-top-rechts">
+      <button id="mute" class="mute-btn" aria-label="Ton ausschalten">🔊</button>
+      <button id="cart-open" class="cart-btn" aria-label="Sammlung öffnen">
+        Sammlung&nbsp;<span id="cart-count" class="cart-count">0</span>
+      </button>
+    </div>
   </header>
 
   <!-- Saal-Navigation -->
-  <nav id="room-nav" class="chrome room-nav hidden" aria-label="Säle"></nav>
+  <nav id="room-nav" class="chrome room-nav" aria-label="Säle"></nav>
+
+  <!-- Saalwechsel-Blende + Caption -->
+  <div id="fade"></div>
+  <div id="saal-caption" aria-hidden="true">
+    <p class="eyebrow sc-saal">Saal I</p>
+    <p class="sc-name">Moderne</p>
+  </div>
+
+  <!-- Touch-Joystick -->
+  <div id="joystick" aria-hidden="true">
+    <div class="joy-basis"></div>
+    <div class="joy-knauf"></div>
+  </div>
 
   <!-- Werk-Detailpanel (Saaltext) -->
   <aside id="artwork-panel" class="panel artwork-panel" aria-hidden="true">
@@ -53,14 +75,20 @@
       <div><dt>Jahr</dt><dd id="aw-year"></dd></div>
     </dl>
     <p class="aw-desc" id="aw-desc"></p>
+    <p class="aw-unikat"><span class="dot-brass"></span>Unikat — nur einmal verfügbar</p>
     <div class="aw-buy">
       <span class="aw-price" id="aw-price"></span>
       <button id="aw-add" class="btn-brass">In die Sammlung</button>
     </div>
     <p class="aw-sold hidden" id="aw-sold"><span class="dot"></span>Verkauft</p>
+    <ul class="aw-trust">
+      <li>Signiertes Echtheitszertifikat</li>
+      <li>Versicherter Kunstversand mit Termin</li>
+      <li>14 Tage Rückgaberecht</li>
+    </ul>
   </aside>
 
-  <!-- Warenkorb -->
+  <!-- Sammlung (Warenkorb) -->
   <aside id="cart-panel" class="panel cart-panel" aria-hidden="true">
     <button class="panel-close" data-close="cart" aria-label="Schließen">×</button>
     <p class="eyebrow">Ihre Sammlung</p>
@@ -81,22 +109,29 @@
       <div id="checkout-form-view">
         <p class="eyebrow">Erwerb</p>
         <h2 class="modal-title">Ihre Angaben</h2>
+        <div id="checkout-items"></div>
         <form id="checkout-form">
           <label>Name<input type="text" name="name" required autocomplete="name" /></label>
           <label>E-Mail<input type="email" name="email" required autocomplete="email" /></label>
           <label>Telefon (optional)<input type="tel" name="phone" autocomplete="tel" /></label>
+          <label>Nachricht (optional)<textarea name="nachricht" rows="3" placeholder="z. B. Besichtigungswunsch, Fragen zu Rahmung oder Lieferung"></textarea></label>
           <div class="rule"></div>
           <div class="cart-total-row">
             <span>Gesamt</span><span id="checkout-total">0 €</span>
           </div>
-          <button type="submit" class="btn-brass">Verbindlich reservieren</button>
-          <p class="cart-note">Demo-Modus: Die Online-Zahlung (Stripe) wird nach Freigabe durch die Galerie aktiviert. Bis dahin reservieren wir die Werke und melden uns persönlich.</p>
+          <button type="submit" class="btn-brass">Unverbindlich reservieren</button>
+          <p class="cart-note">Keine Zahlung erforderlich — die Galerie meldet sich innerhalb eines Werktags persönlich bei Ihnen.</p>
         </form>
       </div>
       <div id="checkout-success-view" class="hidden">
         <p class="eyebrow">Bestätigung</p>
         <h2 class="modal-title">Reservierung eingegangen</h2>
-        <p class="aw-desc">Vielen Dank. Die Galerie meldet sich innerhalb eines Werktags persönlich bei Ihnen, um Zahlung und Übergabe zu besprechen. Die Werke sind für Sie zurückgelegt.</p>
+        <p class="aw-desc">Vielen Dank. Die Werke sind für Sie zurückgelegt. So geht es weiter:</p>
+        <ol class="success-schritte">
+          <li>Persönlicher Kontakt innerhalb eines Werktags</li>
+          <li>Zahlung nach Vereinbarung — Überweisung oder vor Ort</li>
+          <li>Versicherte Lieferung mit Termin oder Abholung in der Galerie</li>
+        </ol>
         <button class="btn-brass" data-close="checkout">Zurück in die Galerie</button>
       </div>
     </div>
