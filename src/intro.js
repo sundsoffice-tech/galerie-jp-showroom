@@ -4,7 +4,7 @@
 
 import * as THREE from "three";
 import { KONFIG, REDUZIERTE_BEWEGUNG } from "./konfig.js";
-import { RAUM_T, raumZentrumX } from "./szene.js";
+import { RAUM_B, raumZentrumX } from "./szene.js";
 import * as klang from "./klang.js";
 
 const B = KONFIG.besucher;
@@ -15,7 +15,10 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
   let eintrittStart = 0; // Echtzeit — übersteht pausierte Frames (Tab im Hintergrund)
   let driftPose = null;
   const cx0 = raumZentrumX(0);
-  const startPos = new THREE.Vector3(cx0, B.augenhoehe, RAUM_T * 0.32);
+  // Startpose „Entrée": vor der Wortmarken-Wand, Blick nach Osten
+  // durch die gesamte Tür-Flucht der Galerie
+  const startPos = new THREE.Vector3(cx0 - RAUM_B / 2 + 2.3, B.augenhoehe, 0);
+  const START_YAW = -Math.PI / 2;
 
   const plan = [
     { t: 0.15, fn: () => {} }, // Kamerafahrt startet (siehe update)
@@ -49,7 +52,7 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
     if (REDUZIERTE_BEWEGUNG) {
       // ohne Fahrt: alles sofort, Zündung ohne Versatz
       camera.position.copy(startPos);
-      camera.rotation.set(0, 0, 0);
+      camera.rotation.set(0, START_YAW, 0);
       camera.fov = B.fovBasis;
       camera.updateProjectionMatrix();
       belichtung.ziel = KONFIG.licht.belichtung;
@@ -57,7 +60,7 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
       ui.zeigeChrome("top");
       ui.zeigeChrome("nav");
       steuerung.starte();
-      steuerung.setzeBlick(0, 0);
+      steuerung.setzeBlick(START_YAW, 0);
       modus = "fertig";
     }
   }
@@ -68,13 +71,14 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
     zeit += dt;
 
     if (modus === "drift") {
-      // Lissajous-Drift, Perioden > 60 s — Bewegung, die man nicht „sieht"
+      // Lissajous-Drift entlang der Galerie-Achse, Blick die Flucht hinunter —
+      // Perioden > 60 s: Bewegung, die man spürt, aber nicht „sieht"
       camera.position.set(
-        cx0 + Math.sin(zeit * 0.05) * 2.2,
+        startPos.x + 1.1 + Math.sin(zeit * 0.05) * 1.3,
         B.augenhoehe,
-        2.6 + Math.cos(zeit * 0.037) * 0.8
+        Math.cos(zeit * 0.037) * 0.9
       );
-      camera.rotation.set(-0.02, Math.sin(zeit * 0.043) * 0.5, 0);
+      camera.rotation.set(-0.02, START_YAW + Math.sin(zeit * 0.043) * 0.32, 0);
       if (Math.abs(camera.fov - B.fovIntro) > 0.01) {
         camera.fov = B.fovIntro;
         camera.updateProjectionMatrix();
@@ -93,14 +97,14 @@ export function erstelleIntro({ camera, belichtung, beleuchtung, steuerung, ui }
     const f = THREE.MathUtils.clamp((eintrittZeit - 0.15) / 2.4, 0, 1);
     const s = f < 0.5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;
     camera.position.lerpVectors(driftPose.pos, startPos, s);
-    const yaw = THREE.MathUtils.lerp(driftPose.yaw, 0, s);
+    const yaw = THREE.MathUtils.lerp(driftPose.yaw, START_YAW, s);
     const pitch = THREE.MathUtils.lerp(driftPose.pitch, 0, s);
     camera.rotation.set(pitch, yaw, 0);
     camera.fov = THREE.MathUtils.lerp(driftPose.fov, B.fovBasis, s);
     camera.updateProjectionMatrix();
 
     if (eintrittZeit >= 2.6) {
-      steuerung.setzeBlick(0, 0);
+      steuerung.setzeBlick(START_YAW, 0);
       modus = "fertig";
       return false;
     }

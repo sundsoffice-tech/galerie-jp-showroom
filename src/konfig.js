@@ -20,10 +20,10 @@ export const KONFIG = {
   besucher: {
     augenhoehe: 1.62, // zugleich Aufhängehöhe der Bildmitte
     gehtempo: 2.4, // Museumsschritt in m/s
-    beschleunigung: 22, // Anfahren (höher = direkter)
-    daempfung: 7.5, // Ausrollen (höher = schnelleres Stoppen)
+    beschleunigung: 15, // Anfahren (höher = direkter)
+    daempfung: 6.5, // Ausrollen (höher = schnelleres Stoppen)
     drehempfindlichkeit: 0.0042, // Maus/Touch-Umsehen
-    drehglaettung: 18, // Glättung des Blicks (höher = direkter)
+    drehglaettung: 13, // Glättung des Blicks (höher = direkter)
     drehnachlauf: 5, // Ausschwingen nach dem Loslassen
     bobAmplitude: 0.016, // Geh-Wippen in Metern (0 = aus)
     bobFrequenz: 1.85, // Schritte pro Sekunde

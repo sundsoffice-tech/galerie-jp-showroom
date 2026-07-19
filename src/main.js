@@ -97,8 +97,9 @@ let qualitaet = TIER;
 let dprCap = DPR_CAP; // sinkt bei Qualitätsabstufung und bleibt dann gesenkt
 if (TIER === "A") {
   composer = new EffectComposer(szene.renderer);
-  composer.renderTarget1.samples = 4;
-  composer.renderTarget2.samples = 4;
+  // 2x MSAA statt 4x: halbe Bandbreite, bei den flächigen Wänden kaum sichtbar
+  composer.renderTarget1.samples = 2;
+  composer.renderTarget2.samples = 2;
   composer.addPass(new RenderPass(szene.scene, szene.camera));
   composer.addPass(
     new UnrealBloomPass(
@@ -222,17 +223,20 @@ function loop() {
     if (!erster && !introAktiv) ui.zeigeSaalTitel(raeume[raum]);
   }
 
-  // Frametime-Wächter: nur abstufen, nie zurück (kein Qualitäts-Flackern)
-  frameMittel = frameMittel * 0.985 + dt * 1000 * 0.015;
-  if (frameMittel > 22 && qualitaet === "A") {
+  // Frametime-Wächter: nur abstufen, nie zurück (kein Qualitäts-Flackern).
+  // Reagiert nach ~30 Frames — Ruckeln soll Sekunden dauern, nicht Minuten.
+  frameMittel = frameMittel * 0.97 + dt * 1000 * 0.03;
+  if (frameMittel > 21 && qualitaet === "A") {
     qualitaet = "B";
     composer?.dispose(); // Render-Targets freigeben, sonst GPU-Speicherleck
     composer = null;
+    frameMittel = 16; // der neuen Stufe Zeit geben, bevor weiter abgestuft wird
     console.info("Qualität auf Stufe B reduziert (Frametime).");
-  } else if (frameMittel > 26 && qualitaet === "B") {
+  } else if (frameMittel > 24 && qualitaet === "B") {
     qualitaet = "C";
     dprCap = Math.min(dprCap, 1.25); // gilt auch nach dem nächsten Resize
     szene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
+    frameMittel = 16;
     console.info("Qualität auf Stufe C reduziert (Frametime).");
   }
 

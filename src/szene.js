@@ -46,8 +46,9 @@ function cssFarbe(hex) {
   return "#" + hex.toString(16).padStart(6, "0");
 }
 
-// Pixel-Ratio-Deckel: Touch-Geräte rendern sonst ein Vielfaches der nötigen Fragmente
-export const DPR_CAP = IST_SCHWACH ? KONFIG.mobil.dprCapSchwach : IST_TOUCH ? KONFIG.mobil.dprCap : 2;
+// Pixel-Ratio-Deckel: mehr Fragmente als nötig kosten Laufruhe.
+// Desktop 1.75 statt 2 — visuell kaum unterscheidbar, ~30 % weniger Shading.
+export const DPR_CAP = IST_SCHWACH ? KONFIG.mobil.dprCapSchwach : IST_TOUCH ? KONFIG.mobil.dprCap : 1.75;
 
 export function erstelleSzene(canvas) {
   const renderer = new THREE.WebGLRenderer({
@@ -72,7 +73,10 @@ export function erstelleSzene(canvas) {
     120
   );
   camera.rotation.order = "YXZ";
-  camera.position.set(raumZentrumX(0), AUGE, RAUM_T * 0.32);
+  // Startpose: im Entrée vor der Wortmarken-Wand, Blick nach Osten
+  // durch die gesamte Galerie-Flucht (das Intro übernimmt ab Frame 1)
+  camera.position.set(raumZentrumX(0) - RAUM_B / 2 + 2.3, AUGE, 0);
+  camera.rotation.y = -Math.PI / 2;
 
   const anzahl = raeume.length;
   const gesamtB = anzahl * RAUM_B + (anzahl - 1) * WAND_D;
@@ -194,15 +198,24 @@ export function erstelleSzene(canvas) {
   sockelUndFuge(RAUM_T, minX + WAND_D + 0.02, 0, Math.PI / 2);
   sockelUndFuge(RAUM_T, maxX - WAND_D - 0.02, 0, Math.PI / 2);
 
-  // Galerie-Wortmarke in Messing auf der Eingangs-Stirnwand
+  // Entrée: die Eingangs-Stirnwand trägt nur die Wortmarke — auf Augenhöhe,
+  // damit sie beim ersten Umdrehen den Blick füllt
   erstelleLettering(scene, galerie.name.toUpperCase(), {
     x: minX + WAND_D + 0.02,
-    y: RAUM_H - 0.85,
+    y: 2.15,
     z: 0,
     ry: Math.PI / 2,
-    hoeheM: 0.42,
+    hoeheM: 0.5,
     messing: true,
     schrift: '300 120px "Cormorant Garamond", Georgia, serif',
+  });
+  erstelleLettering(scene, "VIRTUELLER SHOWROOM", {
+    x: minX + WAND_D + 0.02,
+    y: 1.62,
+    z: 0,
+    ry: Math.PI / 2,
+    hoeheM: 0.09,
+    farbe: "rgba(150,136,112,0.9)",
   });
 
   // Innenwände: zwei Halbschalen, damit jeder Saal seine Farbe behält
@@ -297,9 +310,8 @@ export function erstelleSzene(canvas) {
       { slots: sLaengs, laenge: RAUM_B - 2.5, ry: 0, basis: new THREE.Vector3(cx, 0, -RAUM_T / 2), achse: "x" },
       { slots: sLaengs, laenge: RAUM_B - 2.5, ry: Math.PI, basis: new THREE.Vector3(cx, 0, RAUM_T / 2), achse: "x" },
     ];
-    if (ri === 0) {
-      waende.push({ slots: sStirn, laenge: RAUM_T - 2.5, ry: Math.PI / 2, basis: new THREE.Vector3(cx - RAUM_B / 2, 0, 0), achse: "z" });
-    }
+    // Die West-Stirnwand bleibt frei: sie ist das Entrée mit der Wortmarke,
+    // vor dem der Besucher startet — kein Werk im Rücken.
     if (ri === anzahl - 1) {
       waende.push({ slots: sStirn, laenge: RAUM_T - 2.5, ry: -Math.PI / 2, basis: new THREE.Vector3(cx + RAUM_B / 2, 0, 0), achse: "z" });
     }
@@ -547,9 +559,9 @@ export function erstelleSzene(canvas) {
     staubGeo,
     new THREE.PointsMaterial({
       color: 0xffe9c8,
-      size: 0.02,
+      size: 0.016,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.17, // Andeutung, kein Schneetreiben
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })

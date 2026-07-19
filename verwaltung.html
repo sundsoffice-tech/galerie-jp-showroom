@@ -255,8 +255,9 @@
       <h2>3 · Säle</h2>
       <div id="saal-liste"></div>
       <p class="hinweis" style="margin-top:0.8rem">
-        Plätze pro Saal: 6 an den Längswänden, +2 an der Stirnwand im ersten und letzten Saal.
-        Überzählige Werke werden im Showroom nicht gehängt.
+        Plätze pro Saal: 6 an den Längswänden, +2 an der Stirnwand im letzten Saal.
+        Die Eingangswand bleibt frei (Entrée mit Wortmarke). Überzählige Werke
+        werden im Showroom nicht gehängt.
       </p>
     </section>
 
@@ -425,11 +426,9 @@
 
     function kapazitaet(raumIndex) {
       const laengs = 6;
-      // Erster UND letzter Saal haben je eine Stirnwand; bei nur einem Saal
-      // fällt er in beide Rollen und bekommt beide Stirnwände.
-      let stirn = 0;
-      if (raumIndex === 0) stirn += 2;
-      if (raumIndex === daten.raeume.length - 1) stirn += 2;
+      // Die West-Stirnwand ist das Entrée (nur Wortmarke, keine Werke);
+      // Hängeplätze an der Stirnwand gibt es nur im letzten Saal (Ost).
+      const stirn = raumIndex === daten.raeume.length - 1 ? 2 : 0;
       return laengs + stirn;
     }
 

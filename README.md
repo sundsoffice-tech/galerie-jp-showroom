@@ -56,8 +56,9 @@ Die Datei liegt bewusst außerhalb des Builds und wird **nie mit deployt**.
 
 Die Galerie **hängt die Wände automatisch** (Position, Rahmen, Lichtinsel,
 Strahler, Plakette). Pro Saal: 6 Plätze an den Längswänden, +2 an der
-Stirnwand im ersten/letzten Saal; Überzählige werden mit Konsolen-Hinweis
-nicht gehängt.
+Ost-Stirnwand im letzten Saal. Die Eingangswand (West) bleibt frei — sie ist
+das Entrée mit der Wortmarke, vor dem der Besucher startet. Überzählige
+Werke werden mit Konsolen-Hinweis nicht gehängt.
 
 ### Optik & Verhalten anpassen
 
