@@ -145,8 +145,11 @@ if (IM_3D) {
       composer.renderTarget1.samples = 2;
       composer.renderTarget2.samples = 2;
       composer.addPass(new RenderPass(szene.scene, szene.camera));
+      // Schwelle 1.0: nur echtes Licht (Strahler, überlagerte Lichtkegel)
+      // glüht — helle Schilder/Passepartouts bleiben gestochen, sonst
+      // schmiert ihr Halo den Text als „Geist" auf die Wand
       composer.addPass(
-        new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.2, 0.55, 0.9)
+        new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.14, 0.4, 1.0)
       );
       composer.addPass(new OutputPass());
     } catch (fehler) {

@@ -150,24 +150,39 @@ export function erstellePodest(scene, x, z, wandMaterial, registriere, reihenfol
 }
 
 // ————— Saaltafel (Einführungstext neben der Tür) —————
+// Als physische Tafel: Trägerplatte mit Kante, scharfe Schrift (Anisotropie),
+// auf Standard-Hängehöhe.
 export function erstelleSaaltafel(scene, raum, x, z, ry) {
+  const gruppe = new THREE.Group();
+  gruppe.position.set(x, 1.5, z);
+  gruppe.rotation.y = ry;
+
+  const traeger = new THREE.Mesh(
+    new THREE.BoxGeometry(0.63, 0.835, 0.014),
+    new THREE.MeshStandardMaterial({ color: 0xf2eee6, roughness: 0.55 })
+  );
+  gruppe.add(traeger);
+
   const tex = alsTextur(saaltafelCanvas(raum));
-  const tafel = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.72, 0.96),
+  tex.anisotropy = 8; // sonst verschwimmt der Text aus schrägem Blick
+  const flaeche = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.62, 0.821),
     new THREE.MeshBasicMaterial({ map: tex })
   );
-  tafel.position.set(x, 1.55, z);
-  tafel.rotation.y = ry;
-  scene.add(tafel);
-  return tafel;
+  flaeche.position.z = 0.0075;
+  gruppe.add(flaeche);
+
+  scene.add(gruppe);
+  return gruppe;
 }
 
 // ————— Wand-Lettering —————
 export function erstelleLettering(scene, text, { x, y, z, ry, hoeheM, farbe, messing = false, schrift }) {
+  // 128-px-Quelle: die Beschriftung bleibt auch aus der Nähe gestochen scharf
   const { canvas, breite, hoehe } = schriftCanvas(text, {
-    schrift: schrift || '500 64px Archivo, system-ui, sans-serif',
+    schrift: schrift || '500 128px Archivo, system-ui, sans-serif',
     farbe: farbe || "rgba(43,39,33,0.85)",
-    buchstabenAbstand: 18,
+    buchstabenAbstand: 36,
     messing,
   });
   const tex = alsTextur(canvas);

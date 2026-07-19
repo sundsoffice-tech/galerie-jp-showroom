@@ -3,7 +3,7 @@
 // Strahlerkegel, Schatten, Plaketten, Beschriftung. Keine Bild-Assets.
 
 import * as THREE from "three";
-import { formatPreis } from "./katalog.js";
+import { formatPreis, galerie } from "./katalog.js";
 
 export function alsTextur(canvas, { srgb = true, wiederholend = false } = {}) {
   const t = new THREE.CanvasTexture(canvas);
@@ -289,27 +289,53 @@ export function schriftCanvas(text, { schrift, farbe, buchstabenAbstand = 0, mes
   return { canvas: c, breite, hoehe };
 }
 
-// Museums-Einführungstafel eines Saals (Name, Messinglinie, Beschreibung)
+// Museums-Einführungstafel eines Saals — ausbalanciertes Layout mit
+// Buchstabenabstand im Eyebrow, Messinglinie und Galerie-Signatur unten.
 export function saaltafelCanvas(raum) {
-  const W = 768;
-  const H = 1024;
+  const W = 800;
+  const H = 1060;
   const c = document.createElement("canvas");
   c.width = W;
   c.height = H;
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#f2eee6";
   ctx.fillRect(0, 0, W, H);
+  const rand = 84;
+
+  // Eyebrow „SAAL I" mit Sperrung
   ctx.fillStyle = "#8a6d3d";
   ctx.font = "500 30px Archivo, system-ui, sans-serif";
-  ctx.fillText(raum.saal.toUpperCase(), 64, 110);
+  let x = rand;
+  for (const z of raum.saal.toUpperCase()) {
+    ctx.fillText(z, x, 138);
+    x += ctx.measureText(z).width + 9;
+  }
+
   ctx.fillStyle = "#1d1b18";
-  ctx.font = '400 96px "Cormorant Garamond", Georgia, serif';
-  ctx.fillText(raum.name, 60, 230);
+  ctx.font = '400 104px "Cormorant Garamond", Georgia, serif';
+  ctx.fillText(kuerze(ctx, raum.name, W - rand * 2), rand - 4, 268);
+
   ctx.fillStyle = "#b59f68";
-  ctx.fillRect(64, 290, 110, 4);
+  ctx.fillRect(rand, 330, 120, 4);
+
   ctx.fillStyle = "#4c473f";
-  ctx.font = "300 38px Archivo, system-ui, sans-serif";
-  zeilenumbruch(ctx, raum.beschreibung, 64, 390, W - 128, 56);
+  ctx.font = "300 40px Archivo, system-ui, sans-serif";
+  zeilenumbruch(ctx, raum.beschreibung, rand, 432, W - rand * 2, 62);
+
+  // Signatur der Galerie am Fuß — bindet die Tafel an die Marke
+  ctx.strokeStyle = "rgba(138,109,61,0.45)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(rand, H - 132);
+  ctx.lineTo(W - rand, H - 132);
+  ctx.stroke();
+  ctx.fillStyle = "#8a7a5e";
+  ctx.font = '400 34px "Cormorant Garamond", Georgia, serif';
+  x = rand;
+  for (const z of (galerie.name || "").toUpperCase()) {
+    ctx.fillText(z, x, H - 76);
+    x += ctx.measureText(z).width + 8;
+  }
   return c;
 }
 
@@ -329,36 +355,38 @@ function zeilenumbruch(ctx, text, x, y, maxB, zeilenH) {
   if (zeile) ctx.fillText(zeile, x, y);
 }
 
-// ————— Plakette —————
+// ————— Plakette — doppelte Auflösung, ruhiges Raster, Serifen-Titel —————
 export function plakettenCanvas(werk) {
   const c = document.createElement("canvas");
-  c.width = 512;
-  c.height = 300;
+  c.width = 816;
+  c.height = 480;
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#f2eee6";
-  ctx.fillRect(0, 0, 512, 300);
+  ctx.fillRect(0, 0, 816, 480);
+  const rand = 52;
   ctx.fillStyle = "#b59f68";
-  ctx.fillRect(28, 34, 60, 3);
+  ctx.fillRect(rand, 62, 96, 5);
   ctx.fillStyle = "#1d1b18";
-  ctx.font = "500 34px Georgia, serif";
-  ctx.fillText(kuerze(ctx, werk.titel, 460), 28, 92);
-  ctx.font = "italic 27px Georgia, serif";
+  ctx.font = '500 56px "Cormorant Garamond", Georgia, serif';
+  ctx.fillText(kuerze(ctx, werk.titel, 816 - rand * 2), rand, 168);
+  ctx.font = "italic 40px Georgia, serif";
   ctx.fillStyle = "#4c473f";
-  ctx.fillText(kuerze(ctx, `${werk.kuenstler}, ${werk.jahr}`, 460), 28, 138);
-  ctx.font = "23px Georgia, serif";
-  ctx.fillText(kuerze(ctx, werk.technik, 460), 28, 178);
+  ctx.fillText(kuerze(ctx, `${werk.kuenstler}, ${werk.jahr}`, 816 - rand * 2), rand, 240);
+  ctx.font = "34px Georgia, serif";
+  ctx.fillStyle = "#6a645a";
+  ctx.fillText(kuerze(ctx, werk.technik, 816 - rand * 2), rand, 302);
   if (!werk.verkauft) {
-    ctx.font = "500 27px Georgia, serif";
+    ctx.font = "500 42px Georgia, serif";
     ctx.fillStyle = "#8a6d3d";
-    ctx.fillText(formatPreis(werk.preis), 28, 240);
+    ctx.fillText(formatPreis(werk.preis), rand, 400);
   } else {
     ctx.fillStyle = "#9e3b32";
     ctx.beginPath();
-    ctx.arc(40, 232, 11, 0, Math.PI * 2);
+    ctx.arc(rand + 16, 386, 16, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#4c473f";
-    ctx.font = "23px Georgia, serif";
-    ctx.fillText("Verkauft", 64, 240);
+    ctx.font = "36px Georgia, serif";
+    ctx.fillText("Verkauft", rand + 52, 400);
   }
   return c;
 }

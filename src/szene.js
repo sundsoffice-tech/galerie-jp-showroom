@@ -515,12 +515,16 @@ export function erstelleSzene(canvas) {
     gruppe.add(klickflaeche);
     klickbare.push(bild, klickflaeche);
 
-    // Plakette rechts neben dem Werk — als physisches Acrylschild
+    // Plakette rechts neben dem Werk — als physisches Acrylschild.
+    // Museums-Konvention: fester Abstand zur Rahmenkante, alle Plaketten
+    // hängen auf EINER Linie (Oberkante 1,45 m), egal wie groß das Werk ist.
+    const plakX = rahmenBreite / 2 + 0.18 + 0.17;
+    const plakY = 1.45 - 0.1 - bildY; // Welthöhe der Plakettenmitte: 1,35 m
     const schild = new THREE.Mesh(
       new THREE.BoxGeometry(0.345, 0.205, 0.006),
       new THREE.MeshStandardMaterial({ color: 0xf2eee6, roughness: 0.5 })
     );
-    schild.position.set(b / 2 + 0.42, -h * 0.16, 0.008);
+    schild.position.set(plakX, plakY, 0.008);
     gruppe.add(schild);
     const plakTex = alsTextur(plakettenCanvas(werk));
     plakTex.anisotropy = ANISO; // sonst wird der Text aus schrägem Blick matschig
@@ -528,7 +532,7 @@ export function erstelleSzene(canvas) {
       new THREE.PlaneGeometry(0.34, 0.2),
       new THREE.MeshBasicMaterial({ map: plakTex })
     );
-    plakette.position.set(b / 2 + 0.42, -h * 0.16, 0.012);
+    plakette.position.set(plakX, plakY, 0.012);
     plakette.userData = { werkId: werk.id, istPlakette: true };
     gruppe.add(plakette);
     klickbare.push(plakette);
