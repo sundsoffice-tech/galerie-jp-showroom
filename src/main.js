@@ -11,7 +11,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { werke, galerie, raeume } from "./katalog.js";
+import { werke, galerie, raeume, initKatalog } from "./katalog.js";
 import { KONFIG, TIER } from "./konfig.js";
 import { IST_TOUCH } from "./geraet.js";
 import { erstelleSzene, DPR_CAP } from "./szene.js";
@@ -20,6 +20,30 @@ import { erstelleSteuerung } from "./steuerung.js";
 import { erstelleUI, ladeVerkaufte } from "./ui.js";
 import { erstelleIntro } from "./intro.js";
 import * as klang from "./klang.js";
+
+// ————— Live-Katalog —————
+// Auf der veröffentlichten Seite kommt der Katalog zur Laufzeit direkt aus
+// dem Repo (master) — was die Verwaltung veröffentlicht, ist damit in
+// Minuten live, ganz ohne Build. Schlägt das Laden fehl (offline, Limit),
+// trägt der eingebaute Katalog. Lokal (Dev/Test) zählt immer die lokale Datei.
+const REPO_RAW = "https://raw.githubusercontent.com/sundsoffice-tech/galerie-jp-showroom/master/";
+let datenquelle = "bundle";
+if (location.hostname.endsWith("github.io")) {
+  try {
+    const antwort = await fetch(`${REPO_RAW}src/data/werke.json?t=${Date.now()}`, {
+      cache: "no-store",
+    });
+    if (antwort.ok) {
+      const live = await antwort.json();
+      if (live?.galerie && Array.isArray(live.raeume) && Array.isArray(live.werke) && live.raeume.length) {
+        initKatalog(live, `${REPO_RAW}public/werke/`);
+        datenquelle = "live";
+      }
+    }
+  } catch {
+    /* eingebauter Katalog bleibt */
+  }
+}
 
 // Galeriename und Saalzahl aus den Katalogdaten — pflegt der Händler die
 // Säle, stimmt auch der Eintritts-Text weiter
@@ -312,4 +336,5 @@ window.__galerie = {
   steuerung: () => steuerung,
   qualitaet: () => qualitaet,
   modus: IM_3D ? "3d" : "2d",
+  datenquelle,
 };

@@ -99,6 +99,22 @@
     label.zeile { display: flex; align-items: center; gap: 0.6rem; }
     label.zeile input { width: auto; }
 
+    /* Werkfoto-Zone im Editor */
+    #bild-zone {
+      border: 1px dashed rgba(237, 231, 220, 0.35);
+      min-height: 7rem;
+      display: grid;
+      place-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    #bild-zone.dragover { border-color: var(--brass); background: rgba(194, 163, 107, 0.06); }
+    #bild-zone img { max-height: 11rem; max-width: 100%; object-fit: contain; }
+    #bild-hinweis { font-size: 0.72rem; color: var(--ivory-dim); line-height: 1.5; }
+
     /* Laden */
     #dropzone {
       border: 1px dashed rgba(237, 231, 220, 0.35);
@@ -225,13 +241,32 @@
   <main>
     <section id="laden">
       <h2>1 · Daten laden</h2>
-      <div id="dropzone">
-        <p>werke.json hierher ziehen — oder klicken zum Auswählen</p>
-        <input type="file" id="datei" accept=".json,application/json" class="verborgen" />
+      <div class="felder">
+        <label>Zugangsschlüssel (GitHub-Token)
+          <input id="gh-token" type="password" placeholder="einmal einfügen — wird nur auf diesem Gerät gespeichert" />
+        </label>
       </div>
       <div id="laden-leiste">
-        <button id="dev-laden" class="verborgen">Aktuelle Daten laden (Dev-Server)</button>
+        <button id="gh-verbinden" class="primaer">Verbinden &amp; Galerie laden</button>
+        <button id="dev-laden" class="verborgen">Lokale Daten laden (Dev-Server)</button>
       </div>
+      <details class="hinweis" style="margin-top:0.9rem">
+        <summary>Wo bekomme ich den Zugangsschlüssel her? (einmalig, 2 Minuten)</summary>
+        <ol style="margin:0.6rem 0 0 1.1rem; display:grid; gap:0.35rem">
+          <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:var(--brass-bright)">github.com → Einstellungen → Fine-grained token</a> öffnen (mit dem Galerie-Konto anmelden)</li>
+          <li>Name z.&nbsp;B. „Galerie-Verwaltung", Ablauf 1 Jahr, <b>Only select repositories</b> → <b>galerie-jp-showroom</b></li>
+          <li>Unter „Repository permissions" bei <b>Contents</b> „Read and write" wählen → „Generate token"</li>
+          <li>Den angezeigten Schlüssel oben einfügen — fertig. Er bleibt nur in diesem Browser gespeichert.</li>
+        </ol>
+      </details>
+      <details class="hinweis" style="margin-top:0.5rem">
+        <summary>Ohne Schlüssel arbeiten (Datei-Weg)</summary>
+        <div id="dropzone" style="margin-top:0.6rem">
+          <p>werke.json hierher ziehen — oder klicken zum Auswählen</p>
+          <input type="file" id="datei" accept=".json,application/json" class="verborgen" />
+        </div>
+        <p style="margin-top:0.5rem">Am Ende unten „werke.json herunterladen" und die Datei samt neuen Fotos auf GitHub ersetzen.</p>
+      </details>
       <p id="fehler" class="verborgen"></p>
     </section>
 
@@ -290,11 +325,19 @@
         <label>Höhe (cm)<input id="e-hoehe" type="number" min="1" /></label>
       </div>
       <p id="ratio-vorschau"></p>
-      <div class="form-reihe">
-        <label>Preis (€) — leer lassen für „Preis auf Anfrage"<input id="e-preis" type="number" min="0" step="100" placeholder="auf Anfrage" /></label>
-        <label>Bilddatei<input id="e-bild" placeholder="w-013.jpg · leer = Platzhalter" /></label>
+      <label>Preis (€) — leer lassen für „Preis auf Anfrage"<input id="e-preis" type="number" min="0" step="100" placeholder="auf Anfrage" /></label>
+      <label>Werkfoto
+        <div id="bild-zone">
+          <img id="bild-vorschau" alt="" class="verborgen" />
+          <span id="bild-hinweis">Foto hierher ziehen oder klicken (JPG/PNG) — ohne Foto zeigt der Showroom einen stilechten Platzhalter</span>
+          <input type="file" id="bild-datei" accept="image/jpeg,image/png,image/webp" class="verborgen" />
+        </div>
+      </label>
+      <div id="bild-leiste" class="verborgen" style="display:flex; gap:0.6rem; align-items:center">
+        <span id="bild-name" class="hinweis"></span>
+        <button type="button" id="bild-entfernen" class="gefahr" style="padding:0.35rem 0.6rem; font-size:0.55rem">Foto entfernen</button>
       </div>
-      <p class="hinweis">Foto vor dem Deploy nach <b>public/werke/</b> legen; leer = automatischer Platzhalter.</p>
+      <input id="e-bild" type="hidden" />
       <label>Stripe Payment Link (optional)<input id="e-stripe" placeholder="https://buy.stripe.com/… · auf 1 Zahlung limitieren!" /></label>
       <label class="zeile"><input id="e-verkauft" type="checkbox" />Verkauft</label>
       <label>Beschreibung (Saaltext)<textarea id="e-beschreibung" rows="3"></textarea></label>
@@ -307,14 +350,19 @@
   </dialog>
 
   <footer>
-    <button id="download" class="primaer" disabled>werke.json herunterladen</button>
+    <button id="veroeffentlichen" class="primaer" disabled>Veröffentlichen</button>
+    <span id="publish-status" class="hinweis" style="flex:0 1 auto; min-width:12rem"></span>
     <details>
-      <summary>JSON-Vorschau</summary>
-      <pre id="json-vorschau"></pre>
+      <summary>Ohne Schlüssel / Details</summary>
+      <div style="display:grid; gap:0.5rem; margin-top:0.5rem">
+        <button id="download" disabled>werke.json herunterladen</button>
+        <pre id="json-vorschau"></pre>
+      </div>
     </details>
     <p class="hinweis">
-      1. Herunterladen → 2. auf GitHub <b>src/data/werke.json</b> ersetzen („Add file → Upload files")
-      → 3. Netlify deployt automatisch (~1 Min.). Neue Fotos analog nach <b>public/werke/</b>.
+      <b>Veröffentlichen</b> überträgt Katalog und neue Fotos direkt in die Galerie —
+      nach 1–5 Minuten für alle Besucher sichtbar.
+      <a href="https://sundsoffice-tech.github.io/galerie-jp-showroom/" target="_blank" rel="noopener" style="color:var(--brass-bright)">Showroom öffnen ↗</a>
     </p>
   </footer>
 
@@ -325,6 +373,59 @@
     let editIndex = -1; // -1 = neues Werk
 
     const $ = (id) => document.getElementById(id);
+
+    // ————— GitHub-Anbindung (macht das Veröffentlichen zum Ein-Klick-Schritt) —————
+    const REPO = "sundsoffice-tech/galerie-jp-showroom";
+    const API = `https://api.github.com/repos/${REPO}/contents/`;
+    const RAW = `https://raw.githubusercontent.com/${REPO}/master/`;
+    const TOKEN_KEY = "galerie-verwaltung-token";
+
+    // Neue/ersetzte Fotos bis zum Veröffentlichen: dateiname -> { base64, dataUrl }
+    const neueBilder = new Map();
+
+    function token() {
+      return ($("gh-token").value || "").trim();
+    }
+
+    async function ghApi(pfad, optionen = {}) {
+      const antwort = await fetch(API + pfad, {
+        ...optionen,
+        headers: {
+          Authorization: `Bearer ${token()}`,
+          Accept: "application/vnd.github+json",
+          ...(optionen.headers || {}),
+        },
+      });
+      if (!antwort.ok && antwort.status !== 404) {
+        const info = await antwort.json().catch(() => ({}));
+        throw new Error(info.message || `GitHub antwortet mit ${antwort.status}`);
+      }
+      return antwort;
+    }
+
+    async function ghSha(pfad) {
+      const antwort = await ghApi(pfad + "?ref=master");
+      if (antwort.status === 404) return null;
+      return (await antwort.json()).sha;
+    }
+
+    async function ghSchreiben(pfad, base64, nachricht) {
+      const sha = await ghSha(pfad);
+      const antwort = await ghApi(pfad, {
+        method: "PUT",
+        body: JSON.stringify({ message: nachricht, content: base64, branch: "master", ...(sha ? { sha } : {}) }),
+      });
+      if (!antwort.ok) throw new Error(`Schreiben von ${pfad} fehlgeschlagen`);
+    }
+
+    function textZuBase64(text) {
+      const bytes = new TextEncoder().encode(text);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(bin);
+    }
 
     // Werktitel/Saalnamen dürfen Anführungszeichen und < > enthalten,
     // ohne das erzeugte Markup zu zerstören.
@@ -339,9 +440,11 @@
       const s = $("status");
       if (!daten) { s.textContent = "Keine Daten geladen"; s.classList.remove("geaendert"); return; }
       s.textContent = `${daten.werke.length} Werke · ${daten.raeume.length} Säle` +
-        (geaendert ? " · ungespeicherte Änderungen" : "");
+        (geaendert ? " · unveröffentlichte Änderungen" : "");
       s.classList.toggle("geaendert", geaendert);
       $("download").disabled = false;
+      $("veroeffentlichen").disabled = !geaendert;
+      if (geaendert) $("publish-status").textContent = "";
       $("json-vorschau").textContent = JSON.stringify(daten, null, 2);
     }
 
@@ -402,6 +505,139 @@
         }
       });
     }
+
+    // ————— Verbinden & aus dem Repo laden —————
+    $("gh-token").value = localStorage.getItem(TOKEN_KEY) || "";
+
+    async function ladeVonGitHub() {
+      zeigeFehler("");
+      if (!token()) {
+        zeigeFehler("Bitte zuerst den Zugangsschlüssel einfügen (Anleitung direkt darunter).");
+        return;
+      }
+      const knopf = $("gh-verbinden");
+      knopf.disabled = true;
+      knopf.textContent = "Lade Galerie …";
+      try {
+        const antwort = await fetch(`${RAW}src/data/werke.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!antwort.ok) throw new Error("Katalog nicht erreichbar");
+        const d = await antwort.json();
+        if (!d.galerie || !Array.isArray(d.raeume) || !Array.isArray(d.werke)) {
+          throw new Error("Katalogdatei unvollständig");
+        }
+        // Schlüssel kurz verifizieren, damit „Veröffentlichen" später nicht scheitert
+        await ghSha("src/data/werke.json");
+        localStorage.setItem(TOKEN_KEY, token());
+        daten = d;
+        geaendert = false;
+        neueBilder.clear();
+        renderAlles();
+      } catch (fehler) {
+        zeigeFehler(
+          "Verbindung fehlgeschlagen: " + fehler.message +
+          " — stimmt der Schlüssel (Contents: Read and write, Repo galerie-jp-showroom)?"
+        );
+      }
+      knopf.disabled = false;
+      knopf.textContent = "Verbinden & Galerie laden";
+    }
+    $("gh-verbinden").addEventListener("click", ladeVonGitHub);
+
+    // ————— Werkfoto im Editor: hineinziehen, Vorschau, fertig —————
+    const bildZone = $("bild-zone");
+    bildZone.addEventListener("click", () => $("bild-datei").click());
+    bildZone.addEventListener("dragover", (e) => { e.preventDefault(); bildZone.classList.add("dragover"); });
+    bildZone.addEventListener("dragleave", () => bildZone.classList.remove("dragover"));
+    bildZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      bildZone.classList.remove("dragover");
+      if (e.dataTransfer.files[0]) uebernehmeBild(e.dataTransfer.files[0]);
+    });
+    $("bild-datei").addEventListener("change", (e) => {
+      if (e.target.files[0]) uebernehmeBild(e.target.files[0]);
+      e.target.value = "";
+    });
+    $("bild-entfernen").addEventListener("click", () => setzeEditorBild(null, null));
+
+    function uebernehmeBild(datei) {
+      const endung = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[datei.type];
+      if (!endung) { zeigeEditorFehler(["Bitte ein JPG-, PNG- oder WebP-Foto wählen."]); return; }
+      if (datei.size > 8 * 1024 * 1024) { zeigeEditorFehler(["Foto größer als 8 MB — bitte verkleinert exportieren."]); return; }
+      const leser = new FileReader();
+      leser.onload = () => {
+        const dataUrl = leser.result;
+        const name = `${$("e-id").value}.${endung}`;
+        neueBilder.set(name, { base64: dataUrl.split(",")[1], dataUrl });
+        setzeEditorBild(name, dataUrl);
+        markiereGeaendert();
+      };
+      leser.readAsDataURL(datei);
+    }
+
+    function setzeEditorBild(name, dataUrl) {
+      $("e-bild").value = name || "";
+      const vorschau = $("bild-vorschau");
+      if (name) {
+        vorschau.src = dataUrl || (token() ? RAW + "public/werke/" + name + "?t=" + Date.now() : "");
+        vorschau.classList.toggle("verborgen", !vorschau.src);
+        $("bild-hinweis").classList.add("verborgen");
+        $("bild-leiste").classList.remove("verborgen");
+        $("bild-name").textContent = name;
+      } else {
+        vorschau.classList.add("verborgen");
+        vorschau.removeAttribute("src");
+        $("bild-hinweis").classList.remove("verborgen");
+        $("bild-leiste").classList.add("verborgen");
+      }
+    }
+
+    function zeigeEditorFehler(liste) {
+      $("editor-fehler").innerHTML = liste.map((f) => `<li>${esc(f)}</li>`).join("");
+    }
+
+    // ————— Veröffentlichen: Fotos + Katalog in einem Rutsch —————
+    async function veroeffentlichen() {
+      const status = $("publish-status");
+      const probleme = pruefeGesamt();
+      if (probleme.length) {
+        alert("Bitte zuerst beheben:\n\n• " + probleme.join("\n• "));
+        return;
+      }
+      if (!token()) {
+        alert("Kein Zugangsschlüssel hinterlegt — oben verbinden oder unten den Datei-Weg nutzen.");
+        return;
+      }
+      const knopf = $("veroeffentlichen");
+      knopf.disabled = true;
+      try {
+        // nur Fotos, die ein Werk wirklich referenziert (Abbrüche im Editor
+        // hinterlassen sonst Waisen)
+        const zuUebertragen = [...neueBilder].filter(([name]) =>
+          daten.werke.some((w) => w.bild === name)
+        );
+        let i = 0;
+        for (const [name, bild] of zuUebertragen) {
+          i++;
+          status.textContent = `Übertrage Foto ${i}/${zuUebertragen.length} …`;
+          await ghSchreiben(`public/werke/${name}`, bild.base64, `Verwaltung: Werkfoto ${name}`);
+        }
+        status.textContent = "Übertrage Katalog …";
+        await ghSchreiben(
+          "src/data/werke.json",
+          textZuBase64(JSON.stringify(daten, null, 2) + "\n"),
+          "Verwaltung: Katalog aktualisiert"
+        );
+        neueBilder.clear();
+        geaendert = false;
+        setzeStatus();
+        status.textContent = "✓ Veröffentlicht — in 1–5 Minuten live.";
+      } catch (fehler) {
+        status.textContent = "";
+        alert("Veröffentlichen fehlgeschlagen: " + fehler.message + "\n\nNichts ist verloren — einfach erneut versuchen.");
+      }
+      knopf.disabled = false;
+    }
+    $("veroeffentlichen").addEventListener("click", veroeffentlichen);
 
     // ————— Rendern —————
     function renderAlles() {
@@ -465,22 +701,31 @@
           }));
         wrap.appendChild(zeile);
       });
-      const neu = document.createElement("button");
-      neu.textContent = "+ Saal";
-      neu.style.marginTop = "0.8rem";
-      neu.addEventListener("click", () => {
-        const name = prompt("Name des neuen Saals:");
+      // Neuen Saal direkt anlegen: Name tippen, Enter — fertig
+      const neuZeile = document.createElement("div");
+      neuZeile.style.cssText = "display:flex; gap:0.6rem; margin-top:0.9rem; align-items:center";
+      const neuEingabe = document.createElement("input");
+      neuEingabe.placeholder = "Neuen Saal benennen, z. B. „Skulptur“ …";
+      neuEingabe.style.flex = "1";
+      const neuKnopf = document.createElement("button");
+      neuKnopf.className = "primaer";
+      neuKnopf.textContent = "+ Saal anlegen";
+      const legeSaalAn = () => {
+        const name = neuEingabe.value.trim();
         if (!name) return;
         const id = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
           .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "saal";
-        if (daten.raeume.some((r) => r.id === id)) { alert("Saal-ID existiert bereits."); return; }
+        if (daten.raeume.some((r) => r.id === id)) { alert("Einen Saal mit diesem Namen gibt es schon."); return; }
         const roemisch = ["I","II","III","IV","V","VI","VII","VIII"][daten.raeume.length] || (daten.raeume.length + 1);
         daten.raeume.push({ id, name, saal: `Saal ${roemisch}`, beschreibung: "" });
         markiereGeaendert();
         renderSaele();
         renderWerke();
-      });
-      wrap.appendChild(neu);
+      };
+      neuKnopf.addEventListener("click", legeSaalAn);
+      neuEingabe.addEventListener("keydown", (e) => { if (e.key === "Enter") legeSaalAn(); });
+      neuZeile.append(neuEingabe, neuKnopf);
+      wrap.appendChild(neuZeile);
     }
 
     $("filter-saal").addEventListener("change", renderWerke);
@@ -516,11 +761,15 @@
             </div>
             <span class="badge ${werk.verkauft ? "verkauft" : ""}">${werk.verkauft ? "Verkauft" : "Verfügbar"}</span>
           `;
-          // Thumbnail: unter dem Dev-Server aus public/werke laden, sonst Grau
+          // Thumbnail: frisch hochgeladenes Foto > Repo-Foto > Grau
           const thumb = karte.querySelector(".werk-thumb img");
           if (thumb) {
-            if (location.protocol === "file:") thumb.remove();
-            else thumb.src = `/werke/${werk.bild}`;
+            const frisch = neueBilder.get(werk.bild);
+            if (frisch) thumb.src = frisch.dataUrl;
+            else if (token()) thumb.src = `${RAW}public/werke/${werk.bild}`;
+            else if (location.protocol !== "file:") thumb.src = `/werke/${werk.bild}`;
+            else thumb.remove();
+            thumb.onerror = () => thumb.remove();
           }
           const aktionen = document.createElement("div");
           aktionen.className = "werk-aktionen";
@@ -583,7 +832,7 @@
       $("e-breite").value = werk.breite_cm;
       $("e-hoehe").value = werk.hoehe_cm;
       $("e-preis").value = werk.preis == null ? "" : werk.preis; // leer = auf Anfrage
-      $("e-bild").value = werk.bild || "";
+      setzeEditorBild(werk.bild || null, werk.bild ? neueBilder.get(werk.bild)?.dataUrl || null : null);
       $("e-stripe").value = werk.stripeLink || "";
       $("e-verkauft").checked = !!werk.verkauft;
       $("e-beschreibung").value = werk.beschreibung || "";
@@ -685,6 +934,10 @@
       geaendert = false;
       setzeStatus();
     });
+
+    // Kinderleicht: Ist der Schlüssel schon hinterlegt, lädt die Galerie
+    // beim Öffnen von selbst — Doppelklick auf die Datei genügt.
+    if (token()) ladeVonGitHub();
   </script>
 </body>
 </html>

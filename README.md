@@ -30,13 +30,21 @@ npm run build      # Produktions-Build nach dist/
 
 ## Das System: Werke pflegen ohne Technik-Kenntnisse
 
-Alles Inhaltliche liegt in **einer Datei**: `src/data/werke.json`.
-Dazu gibt es die **Verwaltungs-Seite `verwaltung.html`** (Doppelklick genügt,
-läuft ohne Server): `werke.json` hineinziehen → Werke/Säle in Formularen
-anlegen, bearbeiten, duplizieren, löschen (mit Validierung und
-Kapazitäts-Warnung) → neue `werke.json` herunterladen → auf GitHub
-`src/data/werke.json` ersetzen („Add file → Upload files") → Auto-Deploy.
-Die Datei liegt bewusst außerhalb des Builds und wird **nie mit deployt**.
+**Der Ein-Klick-Weg (empfohlen):** `verwaltung.html` doppelklicken →
+einmalig den GitHub-Zugangsschlüssel einfügen (Anleitung mit Link steht
+direkt in der Seite; Fine-grained Token, nur dieses Repo, Contents R/W) →
+die Galerie lädt von selbst. Dann: Werk anlegen, **Foto einfach in den
+Editor ziehen** (Vorschau erscheint, Dateiname/Ablage übernimmt das System),
+Titel/Preis tippen, **„Veröffentlichen"** — Katalog und Fotos wandern direkt
+ins Repo, und der Live-Showroom zeigt sie **nach 1–5 Minuten**, ganz ohne
+Build: Die veröffentlichte Seite lädt ihren Katalog zur Laufzeit aus dem
+Repo (`main.js`, mit dem eingebauten Stand als Rückfall; lokal/Dev zählt
+immer die lokale Datei). Neue Säle: Name tippen, Enter.
+
+**Ohne Schlüssel** funktioniert weiter der Datei-Weg (werke.json laden →
+bearbeiten → herunterladen → auf GitHub ersetzen; Fotos manuell nach
+`public/werke/`). Die Verwaltungs-Seite liegt außerhalb des Builds und wird
+**nie mit deployt**; der Schlüssel bleibt im Browser des Händlers.
 
 ### Werk-Felder
 

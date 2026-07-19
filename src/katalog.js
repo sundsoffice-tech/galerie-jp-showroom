@@ -8,15 +8,39 @@ import daten from "./data/werke.json";
 import { KONFIG } from "./konfig.js";
 import { IST_TOUCH, IST_SCHWACH } from "./geraet.js";
 
-const preisFormat = new Intl.NumberFormat("de-DE", {
-  style: "currency",
-  currency: daten.galerie.waehrung || "EUR",
-  maximumFractionDigits: 0,
-});
-
 export const galerie = daten.galerie;
 export const raeume = daten.raeume;
 export const werke = daten.werke;
+
+// Die Verwaltung veröffentlicht direkt ins Repo; der Live-Showroom lädt den
+// Katalog dann zur Laufzeit von dort (main.js). Die Arrays werden IN-PLACE
+// ersetzt, damit alle Module dieselben Referenzen behalten.
+let externeBildBasis = null; // z. B. RAW-URL des Repos für Werkfotos
+
+export function initKatalog(neueDaten, bildBasis = null) {
+  Object.assign(galerie, neueDaten.galerie);
+  raeume.length = 0;
+  raeume.push(...neueDaten.raeume);
+  werke.length = 0;
+  werke.push(...neueDaten.werke);
+  externeBildBasis = bildBasis;
+  bildCache.clear();
+}
+
+// Preisformat lazy: die Währung kann durch initKatalog() wechseln
+let _preisFormat = null;
+let _waehrung = null;
+function preisFormat() {
+  if (!_preisFormat || _waehrung !== galerie.waehrung) {
+    _waehrung = galerie.waehrung;
+    _preisFormat = new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: galerie.waehrung || "EUR",
+      maximumFractionDigits: 0,
+    });
+  }
+  return _preisFormat;
+}
 
 export function werkById(id) {
   return werke.find((w) => w.id === id);
@@ -32,7 +56,7 @@ export function raumById(id) {
 
 export function formatPreis(betrag) {
   if (betrag == null) return "Preis auf Anfrage"; // im High-End-Segment üblich
-  return preisFormat.format(betrag);
+  return preisFormat().format(betrag);
 }
 
 // ————— Bilder —————
@@ -41,8 +65,11 @@ const bildCache = new Map();
 
 // Liefert für jedes Werk ein Canvas (Platzhalter) oder eine URL (echtes Foto).
 export function bildQuelle(werk) {
-  // relativer Pfad: funktioniert auch unter einem Unterpfad (GitHub Pages)
-  if (werk.bild) return { typ: "url", wert: `werke/${werk.bild}` };
+  if (werk.bild) {
+    // Live-Daten: Fotos direkt aus dem Repo; sonst relativ (Unterpfad-tauglich)
+    const wert = externeBildBasis ? externeBildBasis + werk.bild : `werke/${werk.bild}`;
+    return { typ: "url", wert };
+  }
   if (!bildCache.has(werk.id)) {
     bildCache.set(werk.id, platzhalterCanvas(werk));
   }
