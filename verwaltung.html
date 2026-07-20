@@ -2,7 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0b09" />
   <title>Galerie JP — Verwaltung</title>
   <!--
     Verwaltungs-Seite für werke.json — bewusst eine einzige, autarke Datei:
@@ -272,6 +273,56 @@
     }
     #ratio-vorschau { font-size: 0.7rem; color: var(--ivory-dim); }
 
+    /* Vorschau */
+    #vorschau-dialog { width: min(90rem, 96vw); }
+    .vorschau-kopf { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    #vorschau-rahmen {
+      width: 100%;
+      height: min(70vh, 46rem);
+      border: 1px solid var(--line);
+      background: #0a0908;
+      display: block;
+    }
+
+    /* Foto-Werkstatt */
+    #foto-editor { width: min(52rem, 94vw); }
+    #zuschnitt-buehne {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+      background: #0a0908;
+      max-width: 100%;
+      touch-action: none;
+    }
+    #zuschnitt-canvas { max-width: 100%; display: block; }
+    #zuschnitt-rahmen {
+      position: absolute;
+      border: 1px solid var(--brass-bright);
+      box-shadow: 0 0 0 9999px rgba(6, 5, 4, 0.62);
+      cursor: move;
+    }
+    .griff {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: var(--brass);
+      border: 2px solid #14110c;
+      border-radius: 50%;
+    }
+    .griff[data-ecke="nw"] { left: -11px; top: -11px; cursor: nwse-resize; }
+    .griff[data-ecke="ne"] { right: -11px; top: -11px; cursor: nesw-resize; }
+    .griff[data-ecke="sw"] { left: -11px; bottom: -11px; cursor: nesw-resize; }
+    .griff[data-ecke="se"] { right: -11px; bottom: -11px; cursor: nwse-resize; }
+    .werkzeug-leiste {
+      display: flex;
+      gap: 0.8rem;
+      align-items: end;
+      flex-wrap: wrap;
+      margin-top: 0.9rem;
+    }
+    .werkzeug-leiste input[type="range"] { width: 100%; accent-color: var(--brass); }
+    #winkel-wert { color: var(--brass-bright); }
+
     /* Fußleiste */
     footer {
       position: fixed;
@@ -299,6 +350,58 @@
       font-size: 0.68rem;
     }
     .verborgen { display: none !important; }
+
+    /* ————— Handy: der Händler steht vor dem Werk und fotografiert —————
+       Alle mehrspaltigen Raster brechen um, Dialoge werden Vollbild. */
+    @media (max-width: 700px) {
+      body { padding-bottom: 9rem; }
+      header { padding: 0.9rem 1rem; }
+      main { padding: 1rem; gap: 1.4rem; }
+      section { padding: 1rem; }
+      .felder { grid-template-columns: 1fr; }
+      #kennzahlen { grid-template-columns: 1fr 1fr; }
+
+      .saal-zeile { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .saal-zeile input[data-feld="beschreibung"] { grid-column: 1 / -1; }
+      .saal-zeile .kapazitaet { grid-column: 1 / -1; }
+      .saal-zeile button { grid-column: 1 / -1; }
+
+      #werk-toolbar { flex-direction: column; align-items: stretch; }
+      #werk-toolbar select, #werk-toolbar input { width: 100%; }
+
+      .werk-karte { grid-template-columns: 3.4rem 1fr; gap: 0.6rem 0.8rem; }
+      .werk-karte .badge { grid-column: 2; justify-self: start; }
+      .werk-aktionen { grid-column: 1 / -1; justify-content: flex-start; }
+      .werk-aktionen button { min-height: 40px; }
+
+      dialog {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin: 0;
+        border: none;
+        padding: 1.1rem;
+        /* im Vollbild deckend — durchscheinender Seiteninhalt wirkt wie ein Fehler */
+        background: #14110c;
+      }
+      .dialog-leiste {
+        bottom: -1.1rem;
+        margin: 0.6rem -1.1rem -1.1rem;
+        padding: 0.9rem 1.1rem calc(0.9rem + env(safe-area-inset-bottom));
+      }
+      .form-reihe { grid-template-columns: 1fr; }
+      #bild-zone { min-height: 9rem; }
+      .griff { width: 30px; height: 30px; } /* fingerfreundlich */
+      .griff[data-ecke="nw"] { left: -15px; top: -15px; }
+      .griff[data-ecke="ne"] { right: -15px; top: -15px; }
+      .griff[data-ecke="sw"] { left: -15px; bottom: -15px; }
+      .griff[data-ecke="se"] { right: -15px; bottom: -15px; }
+      footer { padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom)); }
+      footer .hinweis { display: none; } /* Platz für die Aktionen */
+      button, .primaer { min-height: 40px; }
+      input, select, textarea { font-size: 16px; } /* kein iOS-Auto-Zoom */
+    }
   </style>
 </head>
 <body>
@@ -409,8 +512,9 @@
           <input type="file" id="bild-datei" accept="image/jpeg,image/png,image/webp" class="verborgen" />
         </div>
       </label>
-      <div id="bild-leiste" class="verborgen" style="display:flex; gap:0.6rem; align-items:center">
-        <span id="bild-name" class="hinweis"></span>
+      <div id="bild-leiste" class="verborgen" style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap">
+        <span id="bild-name" class="hinweis" style="flex:1; min-width:8rem"></span>
+        <button type="button" id="bild-bearbeiten" style="padding:0.35rem 0.6rem; font-size:0.55rem">Zuschneiden &amp; gerade rücken</button>
         <button type="button" id="bild-entfernen" class="gefahr" style="padding:0.35rem 0.6rem; font-size:0.55rem">Foto entfernen</button>
       </div>
       <input id="e-bild" type="hidden" />
@@ -442,7 +546,50 @@
     </form>
   </dialog>
 
+  <!-- Foto-Werkstatt: zuschneiden, gerade rücken, drehen -->
+  <dialog id="foto-editor">
+    <h2>Foto zuschneiden</h2>
+    <p class="hinweis" style="margin-bottom:0.7rem">
+      Rahmen auf das Werk ziehen — an den Ecken größer/kleiner, in der Mitte verschieben.
+      Schiefe Aufnahmen mit dem Regler gerade rücken.
+    </p>
+    <div id="zuschnitt-buehne">
+      <canvas id="zuschnitt-canvas"></canvas>
+      <div id="zuschnitt-rahmen">
+        <span class="griff" data-ecke="nw"></span>
+        <span class="griff" data-ecke="ne"></span>
+        <span class="griff" data-ecke="sw"></span>
+        <span class="griff" data-ecke="se"></span>
+      </div>
+    </div>
+    <div class="werkzeug-leiste">
+      <label style="flex:1; min-width:12rem">Gerade rücken <span id="winkel-wert">0°</span>
+        <input id="winkel" type="range" min="-10" max="10" step="0.2" value="0" />
+      </label>
+      <button type="button" id="drehen-links">↺ 90°</button>
+      <button type="button" id="drehen-rechts">↻ 90°</button>
+      <button type="button" id="zuschnitt-zuruecksetzen">Ganzes Foto</button>
+    </div>
+    <div class="dialog-leiste">
+      <button type="button" id="zuschnitt-abbrechen">Abbrechen</button>
+      <button type="button" id="zuschnitt-ok" class="primaer">Übernehmen</button>
+    </div>
+  </dialog>
+
+  <!-- Vorschau: der echte Showroom mit den noch nicht veröffentlichten Daten -->
+  <dialog id="vorschau-dialog">
+    <div class="vorschau-kopf">
+      <h2 style="margin:0">Vorschau — so sieht es aus</h2>
+      <button type="button" id="vorschau-schliessen">Schließen</button>
+    </div>
+    <p class="hinweis" style="margin:0.4rem 0 0.7rem">
+      Ihre ungespeicherten Änderungen inklusive neuer Fotos. Noch sieht das niemand außer Ihnen.
+    </p>
+    <iframe id="vorschau-rahmen" title="Showroom-Vorschau"></iframe>
+  </dialog>
+
   <footer>
+    <button id="vorschau-oeffnen" disabled>Vorschau</button>
     <button id="veroeffentlichen" class="primaer" disabled>Veröffentlichen</button>
     <span id="publish-status" class="hinweis" style="flex:0 1 auto; min-width:12rem"></span>
     <details>
@@ -544,6 +691,7 @@
         (geaendert ? " · unveröffentlichte Änderungen" : "");
       s.classList.toggle("geaendert", geaendert);
       $("download").disabled = false;
+      $("vorschau-oeffnen").disabled = false;
       $("veroeffentlichen").disabled = !geaendert;
       if (geaendert) $("publish-status").textContent = "";
       $("json-vorschau").textContent = JSON.stringify(daten, null, 2);
@@ -749,6 +897,219 @@
     function zeigeEditorFehler(liste) {
       $("editor-fehler").innerHTML = liste.map((f) => `<li>${esc(f)}</li>`).join("");
     }
+
+    // ————— Foto-Werkstatt: zuschneiden und gerade rücken —————
+    // Kunstfotos vom Handy haben Wand, Boden und Schieflage im Bild. Hier
+    // wird das Werk freigestellt, ohne dass ein Bildprogramm nötig ist.
+    const fotoDialog = $("foto-editor");
+    const buehne = $("zuschnitt-buehne");
+    const rahmenEl = $("zuschnitt-rahmen");
+    const zCanvas = $("zuschnitt-canvas");
+    let fotoBild = null; // Quelle (bereits auf Galerie-Maß verkleinert)
+    let fotoDrehung = 0; // 0/90/180/270
+    let fotoWinkel = 0; // Feindrehung in Grad
+    let arbeitCanvas = null; // gedrehtes Vollbild
+    let rahmen = { x: 0, y: 0, w: 0, h: 0 }; // in Anzeige-Pixeln
+
+    function anzeigeSkala() {
+      return zCanvas.clientWidth / (arbeitCanvas?.width || 1);
+    }
+
+    function baueArbeitCanvas() {
+      const gesamt = ((fotoDrehung + fotoWinkel) * Math.PI) / 180;
+      const cos = Math.abs(Math.cos(gesamt));
+      const sin = Math.abs(Math.sin(gesamt));
+      const W = Math.round(fotoBild.width * cos + fotoBild.height * sin);
+      const H = Math.round(fotoBild.width * sin + fotoBild.height * cos);
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const x = c.getContext("2d");
+      x.fillStyle = "#0a0908";
+      x.fillRect(0, 0, W, H);
+      x.translate(W / 2, H / 2);
+      x.rotate(gesamt);
+      x.imageSmoothingQuality = "high";
+      x.drawImage(fotoBild, -fotoBild.width / 2, -fotoBild.height / 2);
+      return c;
+    }
+
+    function zeichneBuehne(rahmenNeuSetzen = false) {
+      arbeitCanvas = baueArbeitCanvas();
+      zCanvas.width = arbeitCanvas.width;
+      zCanvas.height = arbeitCanvas.height;
+      zCanvas.getContext("2d").drawImage(arbeitCanvas, 0, 0);
+      // Anzeigegröße begrenzen, damit der Dialog nicht ausufert
+      const maxB = Math.min(760, window.innerWidth * 0.86);
+      const maxH = window.innerHeight * 0.52;
+      const skala = Math.min(maxB / arbeitCanvas.width, maxH / arbeitCanvas.height, 1);
+      zCanvas.style.width = Math.round(arbeitCanvas.width * skala) + "px";
+      if (rahmenNeuSetzen) setzeRahmenAufGanzesBild();
+      else begrenzeRahmen();
+      malRahmen();
+    }
+
+    function setzeRahmenAufGanzesBild() {
+      rahmen = { x: 0, y: 0, w: zCanvas.clientWidth, h: zCanvas.clientHeight };
+    }
+
+    function begrenzeRahmen() {
+      const B = zCanvas.clientWidth;
+      const H = zCanvas.clientHeight;
+      rahmen.w = Math.max(40, Math.min(rahmen.w, B));
+      rahmen.h = Math.max(40, Math.min(rahmen.h, H));
+      rahmen.x = Math.max(0, Math.min(rahmen.x, B - rahmen.w));
+      rahmen.y = Math.max(0, Math.min(rahmen.y, H - rahmen.h));
+    }
+
+    function malRahmen() {
+      rahmenEl.style.left = rahmen.x + "px";
+      rahmenEl.style.top = rahmen.y + "px";
+      rahmenEl.style.width = rahmen.w + "px";
+      rahmenEl.style.height = rahmen.h + "px";
+    }
+
+    // Ziehen: in der Mitte verschieben, an den Ecken aufziehen
+    let zieh = null;
+    rahmenEl.addEventListener("pointerdown", (e) => {
+      const ecke = e.target.dataset?.ecke || null;
+      zieh = { ecke, startX: e.clientX, startY: e.clientY, start: { ...rahmen } };
+      rahmenEl.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    rahmenEl.addEventListener("pointermove", (e) => {
+      if (!zieh) return;
+      const dx = e.clientX - zieh.startX;
+      const dy = e.clientY - zieh.startY;
+      const s = zieh.start;
+      if (!zieh.ecke) {
+        rahmen.x = s.x + dx;
+        rahmen.y = s.y + dy;
+      } else {
+        if (zieh.ecke.includes("w")) {
+          rahmen.x = s.x + dx;
+          rahmen.w = s.w - dx;
+        } else {
+          rahmen.w = s.w + dx;
+        }
+        if (zieh.ecke.includes("n")) {
+          rahmen.y = s.y + dy;
+          rahmen.h = s.h - dy;
+        } else {
+          rahmen.h = s.h + dy;
+        }
+      }
+      begrenzeRahmen();
+      malRahmen();
+    });
+    const ziehEnde = () => (zieh = null);
+    rahmenEl.addEventListener("pointerup", ziehEnde);
+    rahmenEl.addEventListener("pointercancel", ziehEnde);
+
+    $("winkel").addEventListener("input", (e) => {
+      fotoWinkel = +e.target.value;
+      $("winkel-wert").textContent = fotoWinkel.toFixed(1).replace(".0", "") + "°";
+      zeichneBuehne(true);
+    });
+    $("drehen-links").addEventListener("click", () => {
+      fotoDrehung = (fotoDrehung + 270) % 360;
+      zeichneBuehne(true);
+    });
+    $("drehen-rechts").addEventListener("click", () => {
+      fotoDrehung = (fotoDrehung + 90) % 360;
+      zeichneBuehne(true);
+    });
+    $("zuschnitt-zuruecksetzen").addEventListener("click", () => {
+      fotoDrehung = 0;
+      fotoWinkel = 0;
+      $("winkel").value = 0;
+      $("winkel-wert").textContent = "0°";
+      zeichneBuehne(true);
+    });
+    $("zuschnitt-abbrechen").addEventListener("click", () => fotoDialog.close());
+
+    $("bild-bearbeiten").addEventListener("click", async () => {
+      const name = $("e-bild").value;
+      if (!name) return;
+      const quelle = neueBilder.get(name)?.dataUrl || $("bild-vorschau").src;
+      try {
+        fotoBild = await ladeBild(quelle);
+      } catch {
+        alert("Das Foto konnte nicht geladen werden — bitte neu hochladen.");
+        return;
+      }
+      fotoDrehung = 0;
+      fotoWinkel = 0;
+      $("winkel").value = 0;
+      $("winkel-wert").textContent = "0°";
+      fotoDialog.showModal();
+      // erst nach dem Öffnen messen: vorher ist der Dialog 0 px breit
+      requestAnimationFrame(() => zeichneBuehne(true));
+    });
+
+    function ladeBild(quelle) {
+      return new Promise((ok, fehler) => {
+        const b = new Image();
+        b.crossOrigin = "anonymous";
+        b.onload = () => ok(b);
+        b.onerror = () => fehler(new Error("Bild nicht ladbar"));
+        b.src = quelle;
+      });
+    }
+
+    $("zuschnitt-ok").addEventListener("click", () => {
+      const s = 1 / anzeigeSkala(); // Anzeige -> Originalauflösung
+      const sw = rahmen.w * s;
+      const sh = rahmen.h * s;
+      const f = Math.min(1, FOTO_KANTE / Math.max(sw, sh));
+      const out = document.createElement("canvas");
+      out.width = Math.max(1, Math.round(sw * f));
+      out.height = Math.max(1, Math.round(sh * f));
+      const x = out.getContext("2d");
+      x.imageSmoothingQuality = "high";
+      x.drawImage(arbeitCanvas, rahmen.x * s, rahmen.y * s, sw, sh, 0, 0, out.width, out.height);
+      const dataUrl = out.toDataURL("image/jpeg", FOTO_QUALITAET);
+      const name = $("e-bild").value;
+      neueBilder.set(name, { base64: dataUrl.split(",")[1], dataUrl });
+      setzeEditorBild(name, dataUrl);
+      const kb = Math.round((dataUrl.length * 0.75) / 1024);
+      $("bild-name").textContent = `${name} · ${out.width}×${out.height} px · ${kb} KB`;
+      markiereGeaendert();
+      ratioVorschau();
+      fotoDialog.close();
+    });
+
+    // ————— Vorschau: der echte Showroom mit den ungespeicherten Daten —————
+    // Der Showroom läuft in einem Rahmen und bekommt Katalog samt neuer Fotos
+    // zugeschickt, sobald er sich meldet. So sieht der Händler das Ergebnis,
+    // bevor irgendjemand sonst es zu Gesicht bekommt.
+    const vorschauDialog = $("vorschau-dialog");
+    const vorschauRahmen = $("vorschau-rahmen");
+
+    function vorschauDatenSenden() {
+      const bilder = {};
+      for (const [name, bild] of neueBilder) bilder[name] = bild.dataUrl;
+      vorschauRahmen.contentWindow?.postMessage(
+        { typ: "galerie-vorschau", daten, bilder },
+        "*"
+      );
+    }
+
+    window.addEventListener("message", (e) => {
+      if (e.data?.typ === "galerie-vorschau-bereit") vorschauDatenSenden();
+    });
+
+    $("vorschau-oeffnen").addEventListener("click", () => {
+      if (!daten) return;
+      vorschauDialog.showModal();
+      // Bei lokaler Entwicklung die lokale Fassung zeigen, sonst die Live-Seite
+      const basis = location.protocol.startsWith("http") ? "./" : SHOWROOM;
+      vorschauRahmen.src = `${basis}?vorschau=1&t=${Date.now()}`;
+    });
+    $("vorschau-schliessen").addEventListener("click", () => {
+      vorschauRahmen.removeAttribute("src"); // Rundgang anhalten
+      vorschauDialog.close();
+    });
 
     // ————— Veröffentlichen: Fotos + Katalog in einem Rutsch —————
     async function veroeffentlichen() {
@@ -1155,9 +1516,28 @@
     function ratioVorschau() {
       const b = +$("e-breite").value;
       const h = +$("e-hoehe").value;
-      $("ratio-vorschau").textContent = b > 0 && h > 0
-        ? `Seitenverhältnis ${(b / h).toFixed(2)} — ${b > h ? "Querformat" : b < h ? "Hochformat" : "quadratisch"}; bestimmt die reale Größe an der Wand.`
-        : "";
+      const el = $("ratio-vorschau");
+      if (!(b > 0 && h > 0)) {
+        el.textContent = "";
+        el.style.color = "";
+        return;
+      }
+      const form = b > h ? "Querformat" : b < h ? "Hochformat" : "quadratisch";
+      let text = `Seitenverhältnis ${(b / h).toFixed(2)} — ${form}; bestimmt die reale Größe an der Wand.`;
+      // Weicht das Foto deutlich von den Maßen ab, hängt das Werk verzerrt
+      // oder die Maße stimmen nicht — beides fällt sonst niemandem auf.
+      const vorschau = $("bild-vorschau");
+      if (vorschau.naturalWidth > 0) {
+        const fotoVerhaeltnis = vorschau.naturalWidth / vorschau.naturalHeight;
+        const abweichung = Math.abs(fotoVerhaeltnis - b / h) / (b / h);
+        if (abweichung > 0.08) {
+          text += ` ⚠ Das Foto hat ${fotoVerhaeltnis.toFixed(2)} — bitte Maße prüfen oder das Foto zuschneiden.`;
+          el.style.color = "#d3a06a";
+        } else {
+          el.style.color = "";
+        }
+      }
+      el.textContent = text;
     }
     $("e-breite").addEventListener("input", ratioVorschau);
     $("e-hoehe").addEventListener("input", ratioVorschau);

@@ -16,14 +16,16 @@ export const werke = daten.werke;
 // Katalog dann zur Laufzeit von dort (main.js). Die Arrays werden IN-PLACE
 // ersetzt, damit alle Module dieselben Referenzen behalten.
 let externeBildBasis = null; // z. B. RAW-URL des Repos für Werkfotos
+let direkteBilder = null; // Vorschau: Dateiname -> Data-URL (noch nicht veröffentlicht)
 
-export function initKatalog(neueDaten, bildBasis = null) {
+export function initKatalog(neueDaten, bildBasis = null, bilder = null) {
   Object.assign(galerie, neueDaten.galerie);
   raeume.length = 0;
   raeume.push(...neueDaten.raeume);
   werke.length = 0;
   werke.push(...neueDaten.werke);
   externeBildBasis = bildBasis;
+  direkteBilder = bilder;
   bildCache.clear();
 }
 
@@ -66,7 +68,9 @@ const bildCache = new Map();
 // Liefert für jedes Werk ein Canvas (Platzhalter) oder eine URL (echtes Foto).
 export function bildQuelle(werk) {
   if (werk.bild) {
-    // Live-Daten: Fotos direkt aus dem Repo; sonst relativ (Unterpfad-tauglich)
+    // Vorschau aus der Verwaltung: noch nicht veröffentlichte Fotos direkt;
+    // sonst aus dem Repo (Live) oder relativ (Unterpfad-tauglich)
+    if (direkteBilder?.[werk.bild]) return { typ: "url", wert: direkteBilder[werk.bild] };
     const wert = externeBildBasis ? externeBildBasis + werk.bild : `werke/${werk.bild}`;
     return { typ: "url", wert };
   }

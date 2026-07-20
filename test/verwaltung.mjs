@@ -144,6 +144,64 @@ await pruefe("Werk speichern und herunterladen ergibt gültige Datei", async () 
   return `13 Werke, neues Werk mit Foto „${neu.bild}"`;
 });
 
+await pruefe("Foto-Werkstatt schneidet zu und dreht", async () => {
+  await seite.locator('.werk-karte button:text-is("Bearbeiten")').first().click();
+  await seite.waitForTimeout(500);
+  // Foto anlegen, damit es etwas zu schneiden gibt
+  const bild = await seite.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = 1600; c.height = 1200;
+    const x = c.getContext("2d");
+    x.fillStyle = "#333"; x.fillRect(0, 0, 1600, 1200);
+    x.fillStyle = "#c2a36b"; x.fillRect(300, 200, 1000, 800);
+    return c.toDataURL("image/jpeg", 0.9);
+  });
+  await seite.setInputFiles("#bild-datei", {
+    name: "schief.jpg", mimeType: "image/jpeg",
+    buffer: Buffer.from(bild.split(",")[1], "base64"),
+  });
+  await seite.waitForTimeout(1200);
+  await seite.click("#bild-bearbeiten");
+  await seite.waitForTimeout(800);
+  const offen = await seite.evaluate(() => document.getElementById("foto-editor").open);
+  if (!offen) throw new Error("Werkstatt öffnete nicht");
+  // Drehen und Rahmen verkleinern
+  await seite.click("#drehen-rechts");
+  await seite.waitForTimeout(400);
+  const griff = seite.locator('.griff[data-ecke="se"]');
+  const box = await griff.boundingBox();
+  await seite.mouse.move(box.x + 11, box.y + 11);
+  await seite.mouse.down();
+  await seite.mouse.move(box.x - 120, box.y - 90, { steps: 8 });
+  await seite.mouse.up();
+  await seite.waitForTimeout(300);
+  const vorher = await seite.evaluate(() => document.getElementById("bild-name").textContent);
+  await seite.click("#zuschnitt-ok");
+  await seite.waitForTimeout(900);
+  const nachher = await seite.evaluate(() => ({
+    name: document.getElementById("bild-name").textContent,
+    zu: !document.getElementById("foto-editor").open,
+  }));
+  if (!nachher.zu) throw new Error("Werkstatt blieb offen");
+  if (nachher.name === vorher) throw new Error("Foto unverändert");
+  return `${vorher.split("·")[1]?.trim()} → ${nachher.name.split("·")[1]?.trim()} (gedreht + zugeschnitten)`;
+});
+
+await pruefe("Vorschau zeigt den Showroom mit den eigenen Daten", async () => {
+  await seite.click("#editor-abbrechen");
+  await seite.waitForTimeout(400);
+  await seite.click("#vorschau-oeffnen");
+  await seite.waitForTimeout(7000); // Showroom im Rahmen aufbauen lassen
+  const rahmen = seite.frameLocator("#vorschau-rahmen");
+  const marke = await rahmen.locator("#vorschau-marke").textContent({ timeout: 10000 });
+  const quelle = await seite.evaluate(
+    () => document.getElementById("vorschau-rahmen").contentWindow.__galerie?.datenquelle
+  );
+  if (quelle !== "vorschau") throw new Error(`Datenquelle im Rahmen: ${quelle}`);
+  await seite.click("#vorschau-schliessen");
+  return `„${marke.trim()}", Daten aus der Verwaltung`;
+});
+
 console.log(`=== VERWALTUNG — ${SEITE} ===`);
 schritte.forEach((s) => console.log(s));
 console.log(`=== SEITENFEHLER: ${fehler.length} ===`);

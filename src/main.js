@@ -29,7 +29,31 @@ import * as klang from "./klang.js";
 // trägt der eingebaute Katalog. Lokal (Dev/Test) zählt immer die lokale Datei.
 const REPO_RAW = "https://raw.githubusercontent.com/sundsoffice-tech/galerie-jp-showroom/master/";
 let datenquelle = "bundle";
-if (location.hostname.endsWith("github.io")) {
+
+// Vorschau aus der Verwaltung: Die Galerie wird dort in einen Rahmen geladen
+// und bekommt den ungespeicherten Katalog zugeschickt. Nur mit ?vorschau=1 —
+// ohne diesen ausdrücklichen Schalter wird gar nicht zugehört.
+const istVorschau = new URLSearchParams(location.search).get("vorschau") === "1";
+if (istVorschau) {
+  document.documentElement.classList.add("vorschau");
+  const marke = document.createElement("div");
+  marke.id = "vorschau-marke";
+  marke.textContent = "Vorschau — noch nicht veröffentlicht";
+  document.body.appendChild(marke);
+  const empfangen = new Promise((fertig) => {
+    window.addEventListener("message", (e) => {
+      const n = e.data;
+      if (n?.typ !== "galerie-vorschau" || !n.daten?.raeume?.length) return;
+      initKatalog(n.daten, REPO_RAW + "public/werke/", n.bilder || null);
+      datenquelle = "vorschau";
+      fertig(true);
+    });
+    window.parent?.postMessage({ typ: "galerie-vorschau-bereit" }, "*");
+  });
+  await Promise.race([empfangen, new Promise((r) => setTimeout(r, 4000))]);
+}
+
+if (!istVorschau && location.hostname.endsWith("github.io")) {
   try {
     const antwort = await fetch(`${REPO_RAW}src/data/werke.json?t=${Date.now()}`, {
       cache: "no-store",

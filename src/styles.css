@@ -890,6 +890,24 @@ html.modus-2d body {
 /* Panels dürfen den vollen Platz nutzen, es liegt keine Szene dahinter */
 html.modus-2d .panel { width: min(30rem, 96vw); }
 
+/* ————— Vorschau aus der Verwaltung ————— */
+
+#vorschau-marke {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--brass);
+  color: #14110c;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.3rem 1rem;
+  pointer-events: none;
+}
+
 /* ————— Utility ————— */
 
 .sr-only {
