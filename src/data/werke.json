@@ -64,7 +64,8 @@
       "preis": 8400,
       "bild": null,
       "verkauft": false,
-      "beschreibung": "Zwei schwebende Farbfelder in gedämpftem Ocker und Nachtblau — ein Werk über das Atmen zwischen den Flächen."
+      "beschreibung": "Zwei schwebende Farbfelder in gedämpftem Ocker und Nachtblau — ein Werk über das Atmen zwischen den Flächen.",
+      "sichtbar": false
     },
     {
       "id": "w-002",
