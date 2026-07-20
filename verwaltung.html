@@ -131,6 +131,55 @@
     /* Stammdaten */
     .felder { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.9rem; }
 
+    /* Überblick */
+    #kennzahlen {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+      gap: 0.8rem;
+    }
+    .kachel {
+      border: 1px solid var(--line);
+      padding: 0.9rem 1rem;
+      display: grid;
+      gap: 0.3rem;
+    }
+    .kachel span {
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ivory-dim);
+    }
+    .kachel b {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--brass-bright);
+    }
+    .offener-punkt {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      font-weight: 300;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--ivory);
+      background: rgba(194, 163, 107, 0.06);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--brass);
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.4rem;
+      cursor: pointer;
+    }
+    .offener-punkt:hover { border-color: var(--brass); background: rgba(194, 163, 107, 0.12); }
+    .alles-gut {
+      margin-top: 0.9rem;
+      font-family: var(--serif);
+      font-style: italic;
+      color: var(--ivory-dim);
+    }
+
     /* Säle */
     .saal-zeile {
       display: grid;
@@ -182,6 +231,14 @@
       white-space: nowrap;
     }
     .badge.verkauft { border-color: var(--sold); color: #d3867c; }
+    .badge.schalter {
+      font-family: var(--sans);
+      cursor: pointer;
+      background: transparent;
+      transition: background 0.2s ease;
+    }
+    .badge.schalter:hover { background: rgba(194, 163, 107, 0.12); }
+    .badge.schalter.verkauft:hover { background: rgba(158, 59, 50, 0.14); }
     .werk-aktionen { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
     .werk-aktionen button { padding: 0.4rem 0.7rem; font-size: 0.56rem; }
 
@@ -200,7 +257,19 @@
     .form-reihe { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
     #editor-fehler { color: #d3867c; font-size: 0.8rem; }
     #editor-fehler li { margin-left: 1rem; }
-    .dialog-leiste { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 0.6rem; }
+    /* Speichern muss immer erreichbar sein — der Editor ist länger als das
+       Fenster, sonst müsste man erst ganz nach unten scrollen */
+    .dialog-leiste {
+      position: sticky;
+      bottom: -1.8rem;
+      display: flex;
+      gap: 0.8rem;
+      justify-content: flex-end;
+      margin: 0.6rem -1.8rem -1.8rem;
+      padding: 0.9rem 1.8rem;
+      background: #14110c;
+      border-top: 1px solid var(--line);
+    }
     #ratio-vorschau { font-size: 0.7rem; color: var(--ivory-dim); }
 
     /* Fußleiste */
@@ -240,7 +309,7 @@
 
   <main>
     <section id="laden">
-      <h2>1 · Daten laden</h2>
+      <h2>Verbinden</h2>
       <div class="felder">
         <label>Zugangsschlüssel (GitHub-Token)
           <input id="gh-token" type="password" placeholder="einmal einfügen — wird nur auf diesem Gerät gespeichert" />
@@ -270,8 +339,34 @@
       <p id="fehler" class="verborgen"></p>
     </section>
 
+    <section id="uebersicht" class="verborgen">
+      <h2>Überblick</h2>
+      <div id="kennzahlen"></div>
+      <div id="offene-punkte"></div>
+    </section>
+
+    <section id="werke-sektion" class="verborgen">
+      <h2>Werke</h2>
+      <div id="werk-toolbar">
+        <select id="filter-saal"><option value="">Alle Säle</option></select>
+        <input id="suche" placeholder="Suchen: Titel oder Künstler …" />
+        <button id="werk-neu" class="primaer">+ Neues Werk</button>
+      </div>
+      <div id="werk-liste"></div>
+    </section>
+
+    <section id="saele-sektion" class="verborgen">
+      <h2>Säle</h2>
+      <div id="saal-liste"></div>
+      <p class="hinweis" style="margin-top:0.8rem">
+        Plätze pro Saal: 6 an den Längswänden, +2 an der Stirnwand im letzten Saal.
+        Die Eingangswand bleibt frei (Entrée mit Wortmarke). Überzählige Werke
+        werden im Showroom nicht gehängt.
+      </p>
+    </section>
+
     <section id="galerie-sektion" class="verborgen">
-      <h2>2 · Galerie-Stammdaten</h2>
+      <h2>Galerie-Stammdaten</h2>
       <div class="felder">
         <label>Name<input id="g-name" /></label>
         <label>Währung
@@ -285,26 +380,6 @@
         </label>
       </div>
     </section>
-
-    <section id="saele-sektion" class="verborgen">
-      <h2>3 · Säle</h2>
-      <div id="saal-liste"></div>
-      <p class="hinweis" style="margin-top:0.8rem">
-        Plätze pro Saal: 6 an den Längswänden, +2 an der Stirnwand im letzten Saal.
-        Die Eingangswand bleibt frei (Entrée mit Wortmarke). Überzählige Werke
-        werden im Showroom nicht gehängt.
-      </p>
-    </section>
-
-    <section id="werke-sektion" class="verborgen">
-      <h2>4 · Werke</h2>
-      <div id="werk-toolbar">
-        <select id="filter-saal"><option value="">Alle Säle</option></select>
-        <input id="suche" placeholder="Suchen: Titel oder Künstler …" />
-        <button id="werk-neu" class="primaer">+ Neues Werk</button>
-      </div>
-      <div id="werk-liste"></div>
-    </section>
   </main>
 
   <dialog id="werk-editor">
@@ -316,7 +391,8 @@
       </div>
       <label>Titel<input id="e-titel" /></label>
       <div class="form-reihe">
-        <label>Künstler<input id="e-kuenstler" /></label>
+          <label>Künstler<input id="e-kuenstler" list="kuenstler-liste" autocomplete="off" /></label>
+        <datalist id="kuenstler-liste"></datalist>
         <label>Jahr<input id="e-jahr" type="number" min="1000" max="2100" /></label>
       </div>
       <label>Technik<input id="e-technik" placeholder="z. B. Öl auf Leinwand" /></label>
@@ -329,7 +405,7 @@
       <label>Werkfoto
         <div id="bild-zone">
           <img id="bild-vorschau" alt="" class="verborgen" />
-          <span id="bild-hinweis">Foto hierher ziehen oder klicken (JPG/PNG) — ohne Foto zeigt der Showroom einen stilechten Platzhalter</span>
+          <span id="bild-hinweis">Foto hierher ziehen oder klicken — wird automatisch auf Galerie-Maß gebracht. Ohne Foto zeigt der Showroom einen stilechten Platzhalter.</span>
           <input type="file" id="bild-datei" accept="image/jpeg,image/png,image/webp" class="verborgen" />
         </div>
       </label>
@@ -434,7 +510,14 @@
         body: JSON.stringify({ message: nachricht, content: base64, branch: "master", ...(sha ? { sha } : {}) }),
       });
       if (!antwort.ok) throw new Error(`Schreiben von ${pfad} fehlgeschlagen`);
+      return (await antwort.json()).content?.sha || null;
     }
+
+    // Fassung des Katalogs, die beim Laden vorlag — daran erkennen wir, ob
+    // zwischenzeitlich jemand anders (anderes Gerät, zweite Person)
+    // veröffentlicht hat. Ohne diese Prüfung wären fremde Änderungen
+    // beim nächsten „Veröffentlichen" wortlos verloren.
+    let geladenSha = null;
 
     function textZuBase64(text) {
       const bytes = new TextEncoder().encode(text);
@@ -466,7 +549,12 @@
       $("json-vorschau").textContent = JSON.stringify(daten, null, 2);
     }
 
-    function markiereGeaendert() { geaendert = true; setzeStatus(); }
+    function markiereGeaendert() {
+      geaendert = true;
+      setzeStatus();
+      renderUebersicht(); // Kennzahlen und offene Punkte bleiben aktuell
+      renderKuenstlerliste();
+    }
 
     window.addEventListener("beforeunload", (e) => {
       if (geaendert) { e.preventDefault(); e.returnValue = ""; }
@@ -543,8 +631,8 @@
         if (!d.galerie || !Array.isArray(d.raeume) || !Array.isArray(d.werke)) {
           throw new Error("Katalogdatei unvollständig");
         }
-        // Schlüssel kurz verifizieren, damit „Veröffentlichen" später nicht scheitert
-        await ghSha("src/data/werke.json");
+        // Schlüssel verifizieren und die geladene Fassung merken (Konfliktschutz)
+        geladenSha = await ghSha("src/data/werke.json");
         localStorage.setItem(TOKEN_KEY, token());
         daten = d;
         geaendert = false;
@@ -563,6 +651,7 @@
 
     // ————— Werkfoto im Editor: hineinziehen, Vorschau, fertig —————
     const bildZone = $("bild-zone");
+    const BILD_HINWEIS = $("bild-hinweis").textContent;
     bildZone.addEventListener("click", () => $("bild-datei").click());
     bildZone.addEventListener("dragover", (e) => { e.preventDefault(); bildZone.classList.add("dragover"); });
     bildZone.addEventListener("dragleave", () => bildZone.classList.remove("dragover"));
@@ -577,19 +666,67 @@
     });
     $("bild-entfernen").addEventListener("click", () => setzeEditorBild(null, null));
 
-    function uebernehmeBild(datei) {
-      const endung = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[datei.type];
-      if (!endung) { zeigeEditorFehler(["Bitte ein JPG-, PNG- oder WebP-Foto wählen."]); return; }
-      if (datei.size > 8 * 1024 * 1024) { zeigeEditorFehler(["Foto größer als 8 MB — bitte verkleinert exportieren."]); return; }
-      const leser = new FileReader();
-      leser.onload = () => {
-        const dataUrl = leser.result;
-        const name = `${$("e-id").value}.${endung}`;
+    // Handyfotos haben 3–12 MB und 4000 px Kantenlänge — für eine Wand im
+    // Showroom ist das ein Vielfaches des Nötigen. Statt abzulehnen wird
+    // jedes Foto automatisch auf Galerie-Maß gebracht.
+    const FOTO_KANTE = 2000; // längste Seite in Pixeln
+    const FOTO_QUALITAET = 0.85;
+
+    async function bereiteFotoAuf(datei) {
+      const bitmap = await createImageBitmap(datei);
+      const faktor = Math.min(1, FOTO_KANTE / Math.max(bitmap.width, bitmap.height));
+      const w = Math.round(bitmap.width * faktor);
+      const h = Math.round(bitmap.height * faktor);
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close?.();
+      // immer als JPEG: kleiner als PNG, und Werkfotos brauchen keine Transparenz
+      const dataUrl = c.toDataURL("image/jpeg", FOTO_QUALITAET);
+      return { dataUrl, breite: w, hoehe: h, originalBreite: bitmap.width };
+    }
+
+    async function uebernehmeBild(datei) {
+      if (!/^image\/(jpeg|png|webp)$/.test(datei.type)) {
+        zeigeEditorFehler(["Bitte ein JPG-, PNG- oder WebP-Foto wählen."]);
+        return;
+      }
+      $("bild-hinweis").textContent = "Foto wird aufbereitet …";
+      try {
+        const { dataUrl, breite, hoehe } = await bereiteFotoAuf(datei);
+        const name = `${$("e-id").value}.jpg`;
         neueBilder.set(name, { base64: dataUrl.split(",")[1], dataUrl });
         setzeEditorBild(name, dataUrl);
+        // Maße aus dem Foto übernehmen, solange der Händler noch nichts eingetragen hat
+        uebernehmeSeitenverhaeltnis(breite, hoehe);
+        const kb = Math.round((dataUrl.length * 0.75) / 1024);
+        $("bild-name").textContent = `${name} · ${breite}×${hoehe} px · ${kb} KB`;
         markiereGeaendert();
-      };
-      leser.readAsDataURL(datei);
+      } catch (fehler) {
+        zeigeEditorFehler(["Das Foto konnte nicht gelesen werden: " + fehler.message]);
+      } finally {
+        $("bild-hinweis").textContent = BILD_HINWEIS;
+      }
+    }
+
+    // Das Seitenverhältnis des Fotos ist die verlässlichste Quelle für die
+    // Proportion an der Wand — nur ergänzen, nie eingetragene Maße überschreiben.
+    function uebernehmeSeitenverhaeltnis(breite, hoehe) {
+      const b = +$("e-breite").value;
+      const h = +$("e-hoehe").value;
+      if (b > 0 && h > 0) return;
+      const laengste = 100; // cm, als Startwert
+      if (breite >= hoehe) {
+        $("e-breite").value = laengste;
+        $("e-hoehe").value = Math.round((laengste * hoehe) / breite);
+      } else {
+        $("e-hoehe").value = laengste;
+        $("e-breite").value = Math.round((laengste * breite) / hoehe);
+      }
+      ratioVorschau();
     }
 
     function setzeEditorBild(name, dataUrl) {
@@ -628,6 +765,22 @@
       const knopf = $("veroeffentlichen");
       knopf.disabled = true;
       try {
+        // Hat inzwischen jemand anders veröffentlicht?
+        status.textContent = "Prüfe auf fremde Änderungen …";
+        const jetzige = await ghSha("src/data/werke.json");
+        if (geladenSha && jetzige && jetzige !== geladenSha) {
+          const weiter = confirm(
+            "Der Katalog wurde zwischenzeitlich an anderer Stelle geändert " +
+              "(anderes Gerät oder zweite Person).\n\n" +
+              "OK  = Ihre Fassung veröffentlichen und die fremden Änderungen überschreiben\n" +
+              "Abbrechen = nichts tun (dann die Seite neu laden und Ihre Änderungen erneut eintragen)"
+          );
+          if (!weiter) {
+            status.textContent = "Abgebrochen — nichts wurde überschrieben.";
+            knopf.disabled = false;
+            return;
+          }
+        }
         // nur Fotos, die ein Werk wirklich referenziert (Abbrüche im Editor
         // hinterlassen sonst Waisen)
         const zuUebertragen = [...neueBilder].filter(([name]) =>
@@ -640,7 +793,7 @@
           await ghSchreiben(`public/werke/${name}`, bild.base64, `Verwaltung: Werkfoto ${name}`);
         }
         status.textContent = "Übertrage Katalog …";
-        await ghSchreiben(
+        geladenSha = await ghSchreiben(
           "src/data/werke.json",
           textZuBase64(JSON.stringify(daten, null, 2) + "\n"),
           "Verwaltung: Katalog aktualisiert"
@@ -659,8 +812,10 @@
 
     // ————— Rendern —————
     function renderAlles() {
-      ["galerie-sektion", "saele-sektion", "werke-sektion"].forEach((id) =>
+      ["galerie-sektion", "saele-sektion", "uebersicht", "werke-sektion"].forEach((id) =>
         $(id).classList.remove("verborgen"));
+      renderUebersicht();
+      renderKuenstlerliste();
       $("g-name").value = daten.galerie.name || "";
       $("g-waehrung").value = daten.galerie.waehrung || "EUR";
       $("g-email").value = daten.galerie.email || "";
@@ -677,6 +832,109 @@
           markiereGeaendert();
         });
       });
+
+    // ————— Überblick: Kennzahlen und offene Punkte —————
+    // Beantwortet beim Öffnen die zwei Fragen, die der Händler wirklich hat:
+    // „Wie steht mein Bestand?" und „Was muss ich noch erledigen?"
+    function renderUebersicht() {
+      const werke = daten.werke;
+      const verfuegbar = werke.filter((w) => !w.verkauft);
+      const wert = verfuegbar.reduce((s, w) => s + (w.preis || 0), 0);
+      const geld = new Intl.NumberFormat("de-DE", {
+        style: "currency",
+        currency: daten.galerie.waehrung || "EUR",
+        maximumFractionDigits: 0,
+      });
+      const kacheln = [
+        ["Werke insgesamt", werke.length],
+        ["Verfügbar", verfuegbar.length],
+        ["Verkauft", werke.length - verfuegbar.length],
+        ["Bestandswert", geld.format(wert)],
+      ];
+      $("kennzahlen").innerHTML = kacheln
+        .map((k) => `<div class="kachel"><span>${esc(k[0])}</span><b>${esc(k[1])}</b></div>`)
+        .join("");
+
+      // Offene Punkte — jeder Eintrag führt direkt zur betroffenen Stelle
+      const punkte = [];
+      const ohneFoto = werke.filter((w) => !w.bild);
+      if (ohneFoto.length) {
+        punkte.push({
+          text: `${ohneFoto.length} Werk(e) ohne Foto — der Showroom zeigt dort einen Platzhalter`,
+          werk: ohneFoto[0],
+        });
+      }
+      const ohnePreis = werke.filter((w) => w.preis == null);
+      if (ohnePreis.length) {
+        punkte.push({
+          text: `${ohnePreis.length} Werk(e) ohne Preis — erscheinen als „Preis auf Anfrage"`,
+          werk: ohnePreis[0],
+        });
+      }
+      const ohneText = werke.filter((w) => !(w.beschreibung || "").trim());
+      if (ohneText.length) {
+        punkte.push({ text: `${ohneText.length} Werk(e) ohne Saaltext`, werk: ohneText[0] });
+      }
+      daten.raeume.forEach((raum, i) => {
+        const belegt = werke.filter((w) => w.raum === raum.id).length;
+        const kap = kapazitaet(i);
+        if (belegt > kap) {
+          punkte.push({
+            text: `Saal „${raum.name}": ${belegt - kap} Werk(e) zu viel — sie werden nicht gehängt`,
+            raum: raum.id,
+          });
+        }
+      });
+      if (!daten.galerie.web3formsKey?.trim()) {
+        punkte.push({ text: "Kein Web3Forms-Schlüssel — Reservierungen kommen nicht per E-Mail an" });
+      }
+      if (!daten.galerie.email?.trim()) {
+        punkte.push({ text: "Keine Kontakt-E-Mail — der Anfrage-Link fehlt im Werkpanel" });
+      }
+
+      const wrap = $("offene-punkte");
+      wrap.innerHTML = "";
+      if (!punkte.length) {
+        wrap.innerHTML = '<p class="alles-gut">Alles vollständig — nichts zu erledigen.</p>';
+        return;
+      }
+      const titel = document.createElement("p");
+      titel.className = "hinweis";
+      titel.style.margin = "0.9rem 0 0.5rem";
+      titel.textContent = "Das fehlt noch:";
+      wrap.appendChild(titel);
+      punkte.forEach((p) => {
+        const zeile = document.createElement("button");
+        zeile.className = "offener-punkt";
+        zeile.textContent = p.text;
+        if (p.werk) {
+          zeile.title = "Zum Werk springen";
+          zeile.addEventListener("click", () => oeffneEditor(daten.werke.indexOf(p.werk)));
+        } else if (p.raum) {
+          zeile.title = "Saal anzeigen";
+          zeile.addEventListener("click", () => {
+            $("filter-saal").value = p.raum;
+            $("suche").value = "";
+            renderWerke();
+            $("werke-sektion").scrollIntoView({ behavior: "smooth" });
+          });
+        } else {
+          zeile.title = "Zu den Stammdaten";
+          zeile.addEventListener("click", () =>
+            $("galerie-sektion").scrollIntoView({ behavior: "smooth" })
+          );
+        }
+        wrap.appendChild(zeile);
+      });
+    }
+
+    // Vorschlagsliste gegen Schreibvarianten desselben Künstlers
+    function renderKuenstlerliste() {
+      const namen = [...new Set(daten.werke.map((w) => w.kuenstler).filter(Boolean))].sort();
+      $("kuenstler-liste").innerHTML = namen
+        .map((n) => `<option value="${esc(n)}"></option>`)
+        .join("");
+    }
 
     function kapazitaet(raumIndex) {
       const laengs = 6;
@@ -777,8 +1035,22 @@
               <div class="werk-titel">${esc(werk.titel)}</div>
               <div class="werk-sub">${esc(werk.kuenstler)}, ${esc(werk.jahr)} · ${esc(raum ? raum.name : "?")} · ${esc(werk.breite_cm)}×${esc(werk.hoehe_cm)} cm · ${esc(preis)}</div>
             </div>
-            <span class="badge ${werk.verkauft ? "verkauft" : ""}">${werk.verkauft ? "Verkauft" : "Verfügbar"}</span>
           `;
+          // Verkauft/Verfügbar ist der häufigste Vorgang überhaupt — er darf
+          // nicht fünf Klicks durch den Editor kosten
+          const status = document.createElement("button");
+          status.className = `badge schalter ${werk.verkauft ? "verkauft" : ""}`;
+          status.textContent = werk.verkauft ? "Verkauft" : "Verfügbar";
+          status.title = werk.verkauft
+            ? "Wieder als verfügbar anbieten"
+            : "Als verkauft markieren";
+          status.addEventListener("click", () => {
+            werk.verkauft = !werk.verkauft;
+            markiereGeaendert();
+            renderWerke();
+            renderSaele();
+          });
+          karte.appendChild(status);
           // Thumbnail: frisch hochgeladenes Foto > Repo-Foto > Grau
           const thumb = karte.querySelector(".werk-thumb img");
           if (thumb) {
