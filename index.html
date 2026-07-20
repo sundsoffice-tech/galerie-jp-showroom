@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <!-- kein user-scalable=no: Pinch-Zoom muss möglich bleiben (WCAG 1.4.4).
+       Zoom-Konflikte im Rundgang verhindert touch-action: none auf dem Canvas. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Galerie JP — Virtueller Showroom</title>
+  <meta name="description" content="Der virtuelle Showroom der Galerie JP: Drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar. Begehbar in 3D." />
+  <meta name="theme-color" content="#0c0b09" />
+  <!-- Installierbar als App: Vollbild ohne Browser-Leisten, eigenes Icon -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Galerie JP" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230c0b09'/%3E%3Crect x='5' y='5' width='54' height='54' fill='none' stroke='%23c2a36b' stroke-width='2'/%3E%3Ctext x='32' y='45' font-family='Georgia, serif' font-size='34' fill='%23c2a36b' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E" />
+  <!-- Open Graph: og:image/og:url nach Go-Live auf die echte Domain ändern -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Galerie JP" />
+  <meta property="og:title" content="Galerie JP — Virtueller Showroom" />
+  <meta property="og:description" content="Drei Säle. Ausgewählte Werke. Direkt erwerbbar. Ein begehbarer 3D-Showroom." />
+  <meta property="og:url" content="https://sundsoffice-tech.github.io/galerie-jp-showroom/" />
+  <meta property="og:image" content="https://sundsoffice-tech.github.io/galerie-jp-showroom/og.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="de_DE" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <!-- Schriften werden selbst ausgeliefert (siehe src/styles.css) —
+       keine Verbindung zu Google-Servern, DSGVO-konform -->
+  <script type="module" crossorigin src="./assets/index-BVO4Rr2R.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BYcAkuwd.css">
+</head>
+<body>
+  <canvas id="scene" role="application" aria-label="3D-Rundgang durch die Galerie"></canvas>
+  <div id="sr-status" class="sr-only" role="status" aria-live="polite"></div>
+
+  <!-- Eintritts-Overlay: die Galerie schimmert dahinter -->
+  <div id="intro" class="intro">
+    <div class="intro-inner">
+      <p class="eyebrow">Virtueller Showroom</p>
+      <h1 class="intro-title">Galerie&nbsp;JP</h1>
+      <p class="intro-sub">Drei Säle. Ausgewählte Werke. Direkt erwerbbar.</p>
+      <button id="enter" class="btn-brass">Eintreten</button>
+      <div class="intro-hints">
+        <span class="hint-desktop"><b>Ziehen</b> zum Umsehen</span>
+        <span class="hint-sep hint-desktop">·</span>
+        <span class="hint-desktop"><b>W A S D</b> oder <b>Klick auf den Boden</b> zum Gehen</span>
+        <span class="hint-sep hint-desktop">·</span>
+        <span class="hint-desktop"><b>Klick auf ein Werk</b> für Details &amp; Kauf</span>
+        <span class="hint-touch"><b>Ziehen</b> zum Umsehen · <b>Boden antippen</b> zum Gehen · <b>Werk antippen</b> für Details</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Obere Leiste -->
+  <header id="chrome-top" class="chrome chrome-top">
+    <div class="wordmark">Galerie&nbsp;JP</div>
+    <div class="chrome-top-rechts">
+      <button id="tour-open" class="cart-btn" aria-label="Geführte Tour starten"><span class="nur-breit">Führung</span><span class="nur-schmal">▶</span></button>
+      <button id="catalog-open" class="cart-btn" aria-label="Alle Werke anzeigen"><span class="nur-breit">Alle&nbsp;</span>Werke</button>
+      <button id="mute" class="mute-btn" aria-label="Ton ausschalten">🔊</button>
+      <button id="cart-open" class="cart-btn" aria-label="Sammlung öffnen">
+        Sammlung&nbsp;<span id="cart-count" class="cart-count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Saal-Navigation -->
+  <nav id="room-nav" class="chrome room-nav" aria-label="Säle"></nav>
+
+  <!-- Saalwechsel-Blende + Caption -->
+  <div id="fade"></div>
+  <div id="saal-caption" aria-hidden="true">
+    <p class="eyebrow sc-saal">Saal I</p>
+    <p class="sc-name">Moderne</p>
+    <p class="sc-desc"></p>
+  </div>
+
+  <!-- Werk-Detailpanel (Saaltext) -->
+  <aside id="artwork-panel" class="panel artwork-panel" role="dialog" aria-label="Werkdetails" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
+    <button class="panel-close" data-close="artwork" aria-label="Schließen">×</button>
+    <div class="aw-blaettern">
+      <button id="aw-prev" aria-label="Vorheriges Werk im Saal">‹</button>
+      <button id="aw-next" aria-label="Nächstes Werk im Saal">›</button>
+    </div>
+    <p class="eyebrow" id="aw-room">Saal I — Moderne</p>
+    <h2 class="aw-title" id="aw-title">Titel</h2>
+    <p class="aw-artist" id="aw-artist">Künstler</p>
+    <div class="rule"></div>
+    <img id="aw-bild" alt="" />
+    <dl class="aw-meta">
+      <div><dt>Technik</dt><dd id="aw-technique"></dd></div>
+      <div><dt>Maße</dt><dd id="aw-dimensions"></dd></div>
+      <div><dt>Jahr</dt><dd id="aw-year"></dd></div>
+    </dl>
+    <p class="aw-desc" id="aw-desc"></p>
+    <details id="aw-bio-block" class="aw-bio hidden">
+      <summary>Über <span id="aw-bio-name"></span></summary>
+      <p id="aw-bio-text"></p>
+    </details>
+    <p class="aw-unikat"><span class="dot-brass"></span>Unikat — nur einmal verfügbar</p>
+    <div class="aw-buy">
+      <span class="aw-price" id="aw-price"></span>
+      <button id="aw-add" class="btn-brass">In die Sammlung</button>
+    </div>
+    <button id="aw-stripe" class="btn-stripe hidden">Sofort erwerben</button>
+    <div class="aw-sekundaer">
+      <a id="aw-inquiry" class="aw-textlink hidden" href="#">Unverbindlich anfragen</a>
+      <button id="aw-share" class="aw-textlink">Link kopieren</button>
+    </div>
+    <p class="aw-sold hidden" id="aw-sold"><span class="dot"></span>Verkauft</p>
+    <ul class="aw-trust">
+      <li>Signiertes Echtheitszertifikat</li>
+      <li>Versicherter Kunstversand mit Termin</li>
+      <li>14 Tage Rückgaberecht</li>
+    </ul>
+  </aside>
+
+  <!-- Katalog: alle Werke als 2D-Übersicht -->
+  <aside id="catalog-panel" class="panel" role="dialog" aria-label="Alle Werke" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
+    <button class="panel-close" data-close="catalog" aria-label="Schließen">×</button>
+    <p class="eyebrow">Alle Werke</p>
+    <div id="catalog-grid" class="catalog-grid"></div>
+  </aside>
+
+  <!-- Sammlung (Warenkorb) -->
+  <aside id="cart-panel" class="panel cart-panel" role="dialog" aria-label="Ihre Sammlung" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
+    <button class="panel-close" data-close="cart" aria-label="Schließen">×</button>
+    <p class="eyebrow">Ihre Sammlung</p>
+    <div id="cart-items" class="cart-items"></div>
+    <div class="rule"></div>
+    <div class="cart-total-row">
+      <span>Gesamt</span>
+      <span id="cart-total">0 €</span>
+    </div>
+    <button id="checkout-open" class="btn-brass" disabled>Erwerben</button>
+    <p class="cart-note">Preise inkl. MwSt., zzgl. versichertem Versand.</p>
+  </aside>
+
+  <!-- Checkout-Modal -->
+  <div id="checkout" class="modal hidden" role="dialog" aria-modal="true" aria-label="Werke reservieren">
+    <div class="modal-card">
+      <button class="panel-close" data-close="checkout" aria-label="Schließen">×</button>
+      <div id="checkout-form-view">
+        <p class="eyebrow">Erwerb</p>
+        <h2 class="modal-title">Ihre Angaben</h2>
+        <div id="checkout-items"></div>
+        <form id="checkout-form">
+          <input type="checkbox" name="botcheck" class="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <label>Name<input type="text" name="name" required autocomplete="name" /></label>
+          <label>E-Mail<input type="email" name="email" required autocomplete="email" /></label>
+          <label>Telefon (optional)<input type="tel" name="phone" autocomplete="tel" /></label>
+          <label>Nachricht (optional)<textarea name="nachricht" rows="3" placeholder="z. B. Besichtigungswunsch, Fragen zu Rahmung oder Lieferung"></textarea></label>
+          <div class="rule"></div>
+          <div class="cart-total-row">
+            <span>Gesamt</span><span id="checkout-total">0 €</span>
+          </div>
+          <p id="checkout-error" class="checkout-error hidden" role="alert"></p>
+          <button type="submit" class="btn-brass">Unverbindlich reservieren</button>
+          <p class="cart-note">Keine Zahlung erforderlich — mit dem Absenden reservieren Sie die Werke unverbindlich. Die Galerie meldet sich innerhalb eines Werktags persönlich zur Abwicklung von Zahlung und Übergabe.</p>
+        </form>
+      </div>
+      <div id="checkout-success-view" class="hidden">
+        <p class="eyebrow">Bestätigung</p>
+        <h2 class="modal-title">Reservierung eingegangen</h2>
+        <p class="aw-desc">Vielen Dank. Die Werke sind für Sie zurückgelegt. So geht es weiter:</p>
+        <ol class="success-schritte">
+          <li>Persönlicher Kontakt innerhalb eines Werktags</li>
+          <li>Zahlung nach Vereinbarung — Überweisung oder vor Ort</li>
+          <li>Versicherte Lieferung mit Termin oder Abholung in der Galerie</li>
+        </ol>
+        <button class="btn-brass" data-close="checkout">Zurück in die Galerie</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rückkehr von Stripe nach erfolgreichem Kauf -->
+  <div id="erwerb-danke" class="modal hidden" role="dialog" aria-modal="true" aria-label="Kaufbestätigung">
+    <div class="modal-card">
+      <button class="panel-close" data-close="danke" aria-label="Schließen">×</button>
+      <p class="eyebrow">Erwerb abgeschlossen</p>
+      <h2 class="modal-title">Vielen Dank</h2>
+      <img id="danke-bild" alt="" />
+      <p class="aw-desc" id="danke-text"></p>
+      <ol class="success-schritte">
+        <li>Ihre Zahlung ist bei uns eingegangen — die Bestätigung kommt per E-Mail von Stripe</li>
+        <li>Die Galerie meldet sich innerhalb eines Werktags persönlich zur Übergabe</li>
+        <li>Versicherte Lieferung mit Termin oder Abholung in der Galerie</li>
+      </ol>
+      <button class="btn-brass" data-close="danke">Zurück in die Galerie</button>
+    </div>
+  </div>
+
+  <!-- Rechtliches -->
+  <div class="legal-links">
+    <button data-legal="impressum">Impressum</button>
+    <span>·</span>
+    <button data-legal="datenschutz">Datenschutz</button>
+    <span>·</span>
+    <button data-legal="kontakt">Kontakt</button>
+  </div>
+  <div id="legal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Rechtliche Hinweise">
+    <div class="modal-card">
+      <button class="panel-close" data-close="legal" aria-label="Schließen">×</button>
+      <p class="eyebrow" id="legal-eyebrow">Impressum</p>
+      <h2 class="modal-title" id="legal-titel">Impressum</h2>
+      <div class="aw-desc" id="legal-text"></div>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+
+  <!-- Indexierbarer Textkörper für Crawler (das Canvas ist für sie unsichtbar) -->
+  <noscript>
+    <h1>Galerie JP — Virtueller Showroom</h1>
+    <p>Drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar. Für den begehbaren 3D-Rundgang wird JavaScript benötigt.</p>
+  </noscript>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ArtGallery",
+      "name": "Galerie JP",
+      "description": "Virtueller, begehbarer Showroom: drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar."
+    }
+  </script>
+
+</body>
+</html>
