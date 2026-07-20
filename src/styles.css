@@ -646,6 +646,30 @@ html.touch .hint-touch { display: inline; }
 .cart-item-title { font-family: var(--serif); font-size: 1rem; line-height: 1.2; }
 .cart-item-artist { font-size: 0.72rem; color: var(--ivory-dim); margin-top: 0.15rem; }
 .cart-item-price { font-size: 0.85rem; }
+.cart-item-sofort {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brass-bright);
+  background: none;
+  border: 1px solid var(--brass);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.cart-item-sofort:hover { background: rgba(194, 163, 107, 0.12); }
+
+#danke-bild {
+  width: 100%;
+  max-height: 26vh;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  background: #14110c;
+  margin-bottom: 1.1rem;
+}
+
 .cart-item-remove {
   grid-column: 3;
   font-size: 0.62rem;
@@ -770,7 +794,8 @@ html.touch .hint-touch { display: inline; }
 }
 .success-schritte li::marker { color: var(--brass); }
 
-#checkout-success-view .btn-brass { margin-top: 1.6rem; }
+#checkout-success-view .btn-brass,
+#erwerb-danke .btn-brass { margin-top: 1.6rem; }
 
 /* ————— Katalog-Übersicht ————— */
 

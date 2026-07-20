@@ -173,6 +173,23 @@
     </div>
   </div>
 
+  <!-- Rückkehr von Stripe nach erfolgreichem Kauf -->
+  <div id="erwerb-danke" class="modal hidden" role="dialog" aria-modal="true" aria-label="Kaufbestätigung">
+    <div class="modal-card">
+      <button class="panel-close" data-close="danke" aria-label="Schließen">×</button>
+      <p class="eyebrow">Erwerb abgeschlossen</p>
+      <h2 class="modal-title">Vielen Dank</h2>
+      <img id="danke-bild" alt="" />
+      <p class="aw-desc" id="danke-text"></p>
+      <ol class="success-schritte">
+        <li>Ihre Zahlung ist bei uns eingegangen — die Bestätigung kommt per E-Mail von Stripe</li>
+        <li>Die Galerie meldet sich innerhalb eines Werktags persönlich zur Übergabe</li>
+        <li>Versicherte Lieferung mit Termin oder Abholung in der Galerie</li>
+      </ol>
+      <button class="btn-brass" data-close="danke">Zurück in die Galerie</button>
+    </div>
+  </div>
+
   <!-- Rechtliches -->
   <div class="legal-links">
     <button data-legal="impressum">Impressum</button>

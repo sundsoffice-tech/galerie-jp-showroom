@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/durchlauf.mjs http://localhost:5173/ desktop && node test/durchlauf.mjs http://localhost:5173/ mobil && node test/fallback-2d.mjs http://localhost:5173/ && node test/datenschutz.mjs http://localhost:5173/",
+    "test": "node test/durchlauf.mjs http://localhost:5173/ desktop && node test/durchlauf.mjs http://localhost:5173/ mobil && node test/fallback-2d.mjs http://localhost:5173/ && node test/stripe.mjs http://localhost:5173/ && node test/datenschutz.mjs http://localhost:5173/",
     "test:offline": "node test/offline.mjs http://localhost:4173/",
     "test:live": "node test/durchlauf.mjs https://sundsoffice-tech.github.io/galerie-jp-showroom/ desktop && node test/fallback-2d.mjs https://sundsoffice-tech.github.io/galerie-jp-showroom/ && node test/datenschutz.mjs https://sundsoffice-tech.github.io/galerie-jp-showroom/ && node test/offline.mjs https://sundsoffice-tech.github.io/galerie-jp-showroom/"
   },

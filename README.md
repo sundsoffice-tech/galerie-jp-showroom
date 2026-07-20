@@ -81,14 +81,32 @@ Mobile-Parameter. Galeriename/E-Mail/Währung stehen in `werke.json`.
    gepflegtem `galerie.web3formsKey` (kostenlos von web3forms.com, Key darf
    committed werden) geht eine **echte E-Mail** an die Galerie — Reply-To ist
    der Kunde. Leerer Key = Demo-Modus. **Im Browser testen, nie per curl.**
-2. **Stripe Stufe B (vorbereitet):** Im Stripe-Dashboard je Werk einen
-   Payment Link anlegen mit **„Limit the number of payments" = 1**
-   (harter Unikat-Schutz) und als success-URL `…/?erworben=w-005` setzen.
-   Link in der Verwaltung beim Werk eintragen → im Panel erscheint
-   „Sofort erwerben". Nach Kauf markiert die Galerie das Werk in der
-   Verwaltung als verkauft.
-3. **Stufe C (bei Bedarf):** Serverless-Checkout + Webhook, siehe
-   Netlify-Functions-Pfad — erst sinnvoll ab vielen Online-Verkäufen.
+2. **Sofortkauf über Stripe (fertig, nur noch Links anlegen):** Pro Werk
+   einen Stripe-**Payment Link** erstellen, dabei zwingend zwei Dinge setzen:
+   - **„Limit the number of payments" = 1** — der Link deaktiviert sich nach
+     der ersten Zahlung selbst. Das ist der harte Doppelverkauf-Schutz für
+     Unikate, garantiert von Stripe, ohne eine Zeile Servercode.
+   - Als Weiterleitung nach der Zahlung die Adresse
+     `https://…/galerie-jp-showroom/?erworben=<werk-id>`. **Die Verwaltung
+     zeigt diese Adresse beim jeweiligen Werk fertig zum Kopieren an.**
+
+   Link in der Verwaltung eintragen, veröffentlichen — fertig. Im Werkpanel
+   und in der Sammlung erscheint dann „Sofort erwerben"; der Käufer geht im
+   selben Tab zu Stripe und landet nach der Zahlung wieder in der Galerie:
+   Dankesbildschirm mit Werkabbildung, Werk sofort als verkauft markiert
+   (auch an der Wand), aus der Sammlung entfernt, URL aufgeräumt.
+   Der Verkauf überlebt das Neuladen (lokal gespeichert); dauerhaft trägt
+   die Galerie ihn ein, indem sie das Werk in der Verwaltung auf „verkauft"
+   setzt und veröffentlicht.
+
+   Für hohe Beträge im Stripe-Dashboard neben Karte auch **SEPA-Überweisung**
+   als Zahlungsmethode aktivieren. Geprüft wird der ganze Weg von
+   `test/stripe.mjs` (der Zahlvorgang selbst liegt bei Stripe).
+3. **Stufe C (bei echtem Bedarf):** Serverless-Checkout mit dynamischer
+   Session für mehrere Werke auf einmal + Webhook, der `verkauft` automatisch
+   setzt. Braucht ein Hosting mit Functions (z. B. Netlify, `netlify.toml`
+   liegt bereit) und ein bis zwei Tage Arbeit — erst sinnvoll, wenn Stufe B
+   nachweislich zu viel Handarbeit erzeugt.
 
 ## Testen
 

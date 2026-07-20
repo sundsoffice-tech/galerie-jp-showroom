@@ -42,6 +42,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   function irgendwasOffen() {
     return (
+      !$("erwerb-danke").classList.contains("hidden") ||
       !legal.classList.contains("hidden") ||
       !checkout.classList.contains("hidden") ||
       catalogPanel.classList.contains("open") ||
@@ -78,7 +79,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   });
 
   function schliesseObersteEbene() {
-    if (!legal.classList.contains("hidden")) schliesseLegal(false);
+    if (!$("erwerb-danke").classList.contains("hidden")) schliesseDanke(false);
+    else if (!legal.classList.contains("hidden")) schliesseLegal(false);
     else if (!checkout.classList.contains("hidden")) schliesseCheckout(false);
     else if (catalogPanel.classList.contains("open")) schliesseKatalog(false);
     else if (cartPanel.classList.contains("open")) schliesseCart(false);
@@ -308,10 +310,56 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     const stripeBtn = $("aw-stripe");
     if (werk.stripeLink && !werk.verkauft) {
       stripeBtn.classList.remove("hidden");
-      stripeBtn.onclick = () => window.open(werk.stripeLink, "_blank", "noopener");
+      stripeBtn.textContent =
+        werk.preis == null ? "Sofort erwerben" : `Sofort erwerben — ${formatPreis(werk.preis)}`;
+      stripeBtn.onclick = () => zuStripe(werk);
     } else {
       stripeBtn.classList.add("hidden");
     }
+  }
+
+  // Im selben Tab zu Stripe: ein neues Fenster wird auf Mobilgeräten oft
+  // blockiert, und die Rückkehr-URL landet dann im falschen Tab.
+  function zuStripe(werk) {
+    melde(`Weiterleitung zur Zahlung für „${werk.titel}".`);
+    location.assign(werk.stripeLink);
+  }
+
+  // ————— Rückkehr von Stripe (?erworben=w-005) —————
+  // Das Werk ist zu diesem Zeitpunkt bereits als verkauft markiert (main.js);
+  // hier folgt der sichtbare Abschluss: aus der Sammlung nehmen, danken,
+  // URL aufräumen, damit ein Neuladen nichts doppelt auslöst.
+  function behandleErwerb(werkId) {
+    const werk = werkById(werkId);
+    if (!werk) return;
+    if (sammlung.includes(werkId)) {
+      sammlung = sammlung.filter((x) => x !== werkId);
+      speichereSammlung();
+      renderSammlung();
+    }
+    aktualisiereNavZaehler();
+    const bild = $("danke-bild");
+    setzeWerkBild(bild, werk);
+    bild.alt = `${werk.titel}, ${werk.kuenstler}`;
+    $("danke-text").textContent =
+      `„${werk.titel}" von ${werk.kuenstler} gehört Ihnen. Das Werk ist ein Unikat und ` +
+      `ab sofort nicht mehr verfügbar.`;
+    const danke = $("erwerb-danke");
+    danke.classList.remove("hidden");
+    verlaufAnlegen();
+    merkeFokus();
+    danke.querySelector(".panel-close").focus({ preventScroll: true });
+    melde(`Erwerb von „${werk.titel}" abgeschlossen. Vielen Dank.`);
+    const sauber = new URL(location.href);
+    sauber.searchParams.delete("erworben");
+    history.replaceState(history.state, "", sauber.pathname + sauber.search + sauber.hash);
+  }
+
+  function schliesseDanke(mitVerlauf = true) {
+    const warOffen = !$("erwerb-danke").classList.contains("hidden");
+    $("erwerb-danke").classList.add("hidden");
+    stelleFokusWiederHer();
+    if (warOffen && mitVerlauf) verlaufAbbauen();
   }
 
   $("aw-add").addEventListener("click", () => {
@@ -412,6 +460,15 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       mitte.innerHTML = `<div class="cart-item-title">${werk.titel}</div><div class="cart-item-artist">${werk.kuenstler}, Unikat</div>`;
       const rechts = document.createElement("div");
       rechts.innerHTML = `<div class="cart-item-price">${formatPreis(werk.preis)}</div>`;
+      // Payment Links gelten je Werk — wo einer gepflegt ist, kann dieses
+      // Werk sofort bezahlt werden, der Rest läuft über die Reservierung
+      if (werk.stripeLink) {
+        const sofort = document.createElement("button");
+        sofort.className = "cart-item-sofort";
+        sofort.textContent = "Sofort kaufen";
+        sofort.addEventListener("click", () => zuStripe(werk));
+        rechts.appendChild(sofort);
+      }
       const entf = document.createElement("button");
       entf.className = "cart-item-remove";
       entf.textContent = "Entfernen";
@@ -669,6 +726,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
       if (ziel === "catalog") schliesseKatalog();
       if (ziel === "checkout") schliesseCheckout();
       if (ziel === "legal") schliesseLegal();
+      if (ziel === "danke") schliesseDanke();
     })
   );
 
@@ -680,7 +738,8 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
 
   window.addEventListener("keydown", (e) => {
     if (e.code !== "Escape") return;
-    if (!legal.classList.contains("hidden")) schliesseLegal();
+    if (!$("erwerb-danke").classList.contains("hidden")) schliesseDanke();
+    else if (!legal.classList.contains("hidden")) schliesseLegal();
     else if (!checkout.classList.contains("hidden")) schliesseCheckout();
     else if (catalogPanel.classList.contains("open")) schliesseKatalog();
     else if (cartPanel.classList.contains("open")) schliesseCart();
@@ -724,6 +783,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   return {
     oeffneWerk,
     schliesseWerkPanel,
+    behandleErwerb,
     melde,
     zeigeHover,
     markiereRaum,

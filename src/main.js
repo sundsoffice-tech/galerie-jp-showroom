@@ -64,12 +64,14 @@ werke.forEach((w) => {
   if (verkaufteIds.includes(w.id)) w.verkauft = true;
 });
 
-// Rückkehr von einem Stripe Payment Link (?erworben=w-005):
-// das Werk sofort lokal als verkauft markieren
+// Rückkehr von einem Stripe Payment Link (?erworben=w-005): das Werk sofort
+// als verkauft markieren — noch VOR dem Szenenaufbau, damit die Plakette an
+// der Wand direkt „Verkauft" zeigt. Der sichtbare Abschluss (Dank, Sammlung
+// bereinigen, URL aufräumen) folgt weiter unten über die UI.
 const erworben = new URLSearchParams(location.search).get("erworben");
-if (erworben && werke.some((w) => w.id === erworben)) {
-  const w = werke.find((x) => x.id === erworben);
-  w.verkauft = true;
+const erworbenGueltig = erworben && werke.some((w) => w.id === erworben);
+if (erworbenGueltig) {
+  werke.find((x) => x.id === erworben).verkauft = true;
   if (!verkaufteIds.includes(erworben)) {
     verkaufteIds.push(erworben);
     localStorage.setItem("galerie-jp-verkauft", JSON.stringify(verkaufteIds));
@@ -134,6 +136,9 @@ const ui = erstelleUI({
 
 const enterBtn = document.getElementById("enter");
 enterBtn.focus({ preventScroll: true }); // Enter-Taste startet sofort
+
+// Kaufbestätigung nach Stripe-Rückkehr — unabhängig von 3D oder Katalog-Modus
+if (erworbenGueltig) ui.behandleErwerb(erworben);
 
 // Bildschirmtastatur (iOS): echte sichtbare Höhe als CSS-Variable pflegen
 if (window.visualViewport) {

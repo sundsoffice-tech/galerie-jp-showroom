@@ -338,7 +338,24 @@
         <button type="button" id="bild-entfernen" class="gefahr" style="padding:0.35rem 0.6rem; font-size:0.55rem">Foto entfernen</button>
       </div>
       <input id="e-bild" type="hidden" />
-      <label>Stripe Payment Link (optional)<input id="e-stripe" placeholder="https://buy.stripe.com/… · auf 1 Zahlung limitieren!" /></label>
+      <label>Stripe-Zahlungslink (optional — für „Sofort erwerben")
+        <input id="e-stripe" placeholder="https://buy.stripe.com/… — leer lassen, wenn nur reserviert werden soll" />
+      </label>
+      <details class="hinweis">
+        <summary>So legen Sie den Zahlungslink an (2 Minuten pro Werk)</summary>
+        <ol style="margin:0.6rem 0 0 1.1rem; display:grid; gap:0.4rem">
+          <li>Im <a href="https://dashboard.stripe.com/payment-links/create" target="_blank" rel="noopener" style="color:var(--brass-bright)">Stripe-Dashboard einen Zahlungslink erstellen</a>: Produktname = Werktitel, Preis eintragen.</li>
+          <li><b>Wichtig für Unikate:</b> unter „Weitere Optionen“ die <b>Anzahl der Zahlungen auf 1 begrenzen</b>. Danach ist der Link automatisch tot — niemand kann dasselbe Werk zweimal kaufen.</li>
+          <li>Bei „Nach der Zahlung“ → <b>Weiterleitung zu einer Seite</b> wählen und diese Adresse einfügen:
+            <div style="display:flex; gap:0.5rem; margin-top:0.4rem; align-items:center">
+              <input id="e-erfolg-url" readonly style="flex:1; font-size:0.75rem" />
+              <button type="button" id="e-erfolg-kopieren" style="white-space:nowrap">Kopieren</button>
+            </div>
+            <span style="display:block; margin-top:0.3rem">Nur so erkennt der Showroom den Kauf und markiert das Werk sofort als verkauft.</span>
+          </li>
+          <li>Den erzeugten Link („buy.stripe.com/…“) oben einfügen und veröffentlichen.</li>
+        </ol>
+      </details>
       <label class="zeile"><input id="e-verkauft" type="checkbox" />Verkauft</label>
       <label>Beschreibung (Saaltext)<textarea id="e-beschreibung" rows="3"></textarea></label>
       <ul id="editor-fehler"></ul>
@@ -376,6 +393,7 @@
 
     // ————— GitHub-Anbindung (macht das Veröffentlichen zum Ein-Klick-Schritt) —————
     const REPO = "sundsoffice-tech/galerie-jp-showroom";
+    const SHOWROOM = "https://sundsoffice-tech.github.io/galerie-jp-showroom/";
     const API = `https://api.github.com/repos/${REPO}/contents/`;
     const RAW = `https://raw.githubusercontent.com/${REPO}/master/`;
     const TOKEN_KEY = "galerie-verwaltung-token";
@@ -853,6 +871,8 @@
       $("e-preis").value = werk.preis == null ? "" : werk.preis; // leer = auf Anfrage
       setzeEditorBild(werk.bild || null, werk.bild ? neueBilder.get(werk.bild)?.dataUrl || null : null);
       $("e-stripe").value = werk.stripeLink || "";
+      // fertige Erfolgs-URL für genau dieses Werk (in Stripe einzufügen)
+      $("e-erfolg-url").value = `${SHOWROOM}?erworben=${werk.id}`;
       $("e-verkauft").checked = !!werk.verkauft;
       $("e-beschreibung").value = werk.beschreibung || "";
       $("editor-fehler").innerHTML = "";
@@ -911,6 +931,17 @@
       dialog.close();
       renderWerke();
       renderSaele();
+    });
+
+    $("e-erfolg-kopieren").addEventListener("click", async (e) => {
+      const feld = $("e-erfolg-url");
+      try {
+        await navigator.clipboard.writeText(feld.value);
+        e.target.textContent = "Kopiert ✓";
+        setTimeout(() => (e.target.textContent = "Kopieren"), 1800);
+      } catch {
+        feld.select(); // Zwischenablage gesperrt: wenigstens markieren
+      }
     });
 
     $("editor-abbrechen").addEventListener("click", () => dialog.close());
