@@ -497,7 +497,7 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     },
     datenschutz: {
       titel: "Datenschutz",
-      text: "Beim Absenden einer Reservierung werden Ihre Angaben (Name, E-Mail, optional Telefon und Nachricht) zur Bearbeitung Ihrer Anfrage per Web3Forms (form-to-email-Dienst) an die Galerie übermittelt (Art. 6 Abs. 1 lit. b DSGVO). Es werden keine Tracking-Cookies gesetzt; Ihre Sammlung wird nur lokal in Ihrem Browser gespeichert.\n\n[Vollständige Datenschutzerklärung wird vor dem Go-Live durch die Galerie ergänzt.]",
+      text: "Beim bloßen Besuch dieser Seite werden keine Daten an Dritte übertragen: Schriften werden von unserem eigenen Server ausgeliefert, es gibt keine Tracker und keine Werbe-Cookies. Ihre Sammlung wird ausschließlich lokal in Ihrem Browser gespeichert.\n\nBeim Absenden einer Reservierung werden Ihre Angaben (Name, E-Mail, optional Telefon und Nachricht) zur Bearbeitung Ihrer Anfrage per Web3Forms (form-to-email-Dienst) an die Galerie übermittelt (Art. 6 Abs. 1 lit. b DSGVO).\n\n[Vollständige Datenschutzerklärung wird vor dem Go-Live durch die Galerie ergänzt.]",
     },
     kontakt: {
       titel: "Kontakt",

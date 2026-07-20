@@ -24,4 +24,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     # WICHTIG: connect-src MUSS api.web3forms.com enthalten, sonst bricht der Checkout-fetch.
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; connect-src 'self' https://api.web3forms.com https://raw.githubusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    # Schriften kommen von der eigenen Domain — keine Google-Hosts mehr nötig.
+    # 'unsafe-inline' bei style-src bleibt: die Steuerung setzt style-Attribute
+    # (Sheet-Transform, Joystick) direkt am Element.
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://raw.githubusercontent.com; connect-src 'self' https://api.web3forms.com https://raw.githubusercontent.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

@@ -76,11 +76,19 @@ if (erworben && werke.some((w) => w.id === erworben)) {
   }
 }
 
-// Marken-Serife auch für Canvas-Beschriftung im 3D-Raum laden
+// Alle Schnitte bereitstellen, die die 3D-Beschilderung auf Canvas zeichnet
+// (Wortmarke, Türschilder, Saaltafeln, Plaketten) — sonst rendert ein Teil
+// der Schilder mit Systemschrift. Self-hosted, daher in der Regel sofort da.
 try {
   await Promise.race([
-    document.fonts.load('300 120px "Cormorant Garamond"'),
-    new Promise((r) => setTimeout(r, 1500)),
+    Promise.all([
+      document.fonts.load('300 120px "Cormorant Garamond"'),
+      document.fonts.load('400 104px "Cormorant Garamond"'),
+      document.fonts.load('500 56px "Cormorant Garamond"'),
+      document.fonts.load("300 40px Archivo"),
+      document.fonts.load("500 128px Archivo"),
+    ]),
+    new Promise((r) => setTimeout(r, 2000)),
   ]);
 } catch {
   /* Systemschrift-Fallback */

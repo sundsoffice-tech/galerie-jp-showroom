@@ -108,6 +108,12 @@ Der Test braucht einmalig `npx playwright install chromium`. Er hat u. a.
 aufgedeckt, dass die Blätter-Pfeile den „Sammlung"-Knopf überdeckten und der
 Warenkorb nach einer Reservierung offen blieb — lohnt sich also vor jedem Deploy.
 
+Enthalten ist auch ein **Datenschutz-Wächter** (`test/datenschutz.mjs`): Er
+schlägt fehl, sobald die Seite irgendeine Verbindung zu einem fremden Server
+aufbaut (Google Fonts, CDN, Tracker). Die Schriften werden deshalb selbst
+ausgeliefert (`@fontsource`, eingebunden in `src/styles.css`) — bitte beim
+Weiterbauen keine externen Einbindungen hinzufügen.
+
 ## Technik
 
 - Vite + Three.js, Vanilla JS, keine weiteren Laufzeit-Abhängigkeiten

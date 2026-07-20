@@ -2,6 +2,24 @@
    Ästhetik: Museums-Saaltext auf Rauchglas.
    Farben: Nachtglas, Elfenbein, Messing. */
 
+/* Schriften self-hosted (DSGVO: keine Verbindung zu Google-Servern).
+   Nur die genutzten Schnitte, nur Latein + Latein-erweitert — letzteres
+   deckt europäische Künstlernamen ab (Turković, Şahin, Łuczak …). */
+@import "@fontsource/cormorant-garamond/latin-300.css";
+@import "@fontsource/cormorant-garamond/latin-ext-300.css";
+@import "@fontsource/cormorant-garamond/latin-400.css";
+@import "@fontsource/cormorant-garamond/latin-ext-400.css";
+@import "@fontsource/cormorant-garamond/latin-500.css";
+@import "@fontsource/cormorant-garamond/latin-ext-500.css";
+@import "@fontsource/cormorant-garamond/latin-400-italic.css";
+@import "@fontsource/cormorant-garamond/latin-ext-400-italic.css";
+@import "@fontsource/archivo/latin-300.css";
+@import "@fontsource/archivo/latin-ext-300.css";
+@import "@fontsource/archivo/latin-400.css";
+@import "@fontsource/archivo/latin-ext-400.css";
+@import "@fontsource/archivo/latin-500.css";
+@import "@fontsource/archivo/latin-ext-500.css";
+
 :root {
   --glass: rgba(17, 15, 12, 0.86);
   --glass-soft: rgba(17, 15, 12, 0.6);
