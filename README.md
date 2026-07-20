@@ -41,6 +41,22 @@ Build: Die veröffentlichte Seite lädt ihren Katalog zur Laufzeit aus dem
 Repo (`main.js`, mit dem eingebauten Stand als Rückfall; lokal/Dev zählt
 immer die lokale Datei). Neue Säle: Name tippen, Enter.
 
+Der Weg ist einmal komplett durchgemessen worden (Werk auf Entwurf →
+veröffentlichen → live kontrolliert → zurückgedreht): **die Wartezeit kommt
+vom CDN vor `raw.githubusercontent.com` und lag bei rund drei Minuten.** Wer
+sofort nachsehen will, ob eine Veröffentlichung angekommen ist, fragt nicht
+die RAW-Adresse (die liefert noch den alten Stand, auch mit angehängtem
+`?cb=…`), sondern die API:
+
+```bash
+curl -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/sundsoffice-tech/galerie-jp-showroom/contents/src/data/werke.json?ref=master"
+```
+
+Läuft nebenher eine lokale Arbeitskopie, danach `git fetch && git merge
+--ff-only origin/master` — die Verwaltung committet direkt über die API,
+sonst laufen lokale und veröffentlichte Fassung auseinander.
+
 **Ohne Schlüssel** funktioniert weiter der Datei-Weg (werke.json laden →
 bearbeiten → herunterladen → auf GitHub ersetzen; Fotos manuell nach
 `public/werke/`). Die Verwaltungs-Seite liegt außerhalb des Builds und wird
