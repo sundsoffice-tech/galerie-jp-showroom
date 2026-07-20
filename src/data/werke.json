@@ -25,6 +25,32 @@
       "beschreibung": "Monochrome Arbeiten zwischen Licht und Schatten."
     }
   ],
+  "kuenstler": [
+    {
+      "name": "Mara Weidenfeld",
+      "biografie": "Geboren 1978 in Kiel, lebt und arbeitet an der Ostseeküste. Ihre Farbfeldmalerei entsteht in vielen lasierenden Schichten; die Serie „Küstenlicht“ beschäftigt sie seit 2019. Arbeiten in mehreren norddeutschen Sammlungen."
+    },
+    {
+      "name": "Jonas Brandt",
+      "biografie": "Geboren 1985 in Leipzig, Studium an der HGB. Arbeitet mit selbst angeriebenen Pigmenten auf grob gewebter Leinwand. Zuletzt Einzelausstellungen in Leipzig und Rotterdam."
+    },
+    {
+      "name": "Selin Okur",
+      "biografie": "Geboren 1990 in Istanbul, seit 2014 in Berlin. Ihre großformatigen Gesten entstehen in einer einzigen Sitzung — die Bewegung des ganzen Körpers bleibt im Bild lesbar. Preisträgerin des Förderpreises für junge Malerei 2023."
+    },
+    {
+      "name": "Anton Hilbert",
+      "biografie": "Geboren 1966 in Wien, lebt in München. Zwischen Zeichnung und Malerei angesiedelte Arbeiten, die aus hunderten einzelner Setzungen Ordnung entstehen lassen."
+    },
+    {
+      "name": "Ruth Ellmann",
+      "biografie": "Geboren 1959 in Bern. Arbeitet ausschließlich analog und zieht ihre Silbergelatine-Abzüge selbst ab — jeder Abzug ist ein Unikat. Ihre Landschaftsserien entstehen über Jahre hinweg am selben Ort."
+    },
+    {
+      "name": "Paul Andersson",
+      "biografie": "Geboren 1972 in Malmö, lebt auf Gotland. Langzeitbelichtungen von Meer und Küste, bei denen Minuten zu einer einzigen ruhigen Fläche werden."
+    }
+  ],
   "werke": [
     {
       "id": "w-001",

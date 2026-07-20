@@ -537,6 +537,30 @@ html.touch .hint-touch { display: inline; }
   color: var(--ivory-dim);
 }
 
+.aw-bio {
+  margin-top: 0.9rem;
+  color: var(--ivory-dim);
+}
+.aw-bio summary {
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass);
+  list-style: none;
+}
+.aw-bio summary::-webkit-details-marker { display: none; }
+.aw-bio summary::after { content: " +"; }
+.aw-bio[open] summary::after { content: " −"; }
+.aw-bio summary:hover { color: var(--brass-bright); }
+.aw-bio p {
+  margin-top: 0.6rem;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .aw-unikat {
   margin-top: 1.4rem;
   font-size: 0.62rem;

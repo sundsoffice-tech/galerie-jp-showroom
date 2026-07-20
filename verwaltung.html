@@ -194,12 +194,56 @@
     .kapazitaet { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--ivory-dim); white-space: nowrap; }
     .kapazitaet.voll { color: #d3867c; }
 
+    /* Künstler */
+    .kuenstler-zeile {
+      display: grid;
+      grid-template-columns: 14rem 1fr;
+      gap: 0.9rem;
+      align-items: start;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .kuenstler-zeile:last-child { border-bottom: none; }
+
+    /* Mehrfachauswahl */
+    #auswahl-leiste {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 0.7rem 0.9rem;
+      margin-bottom: 0.9rem;
+      border: 1px solid var(--brass);
+      background: rgba(194, 163, 107, 0.08);
+    }
+    #auswahl-anzahl {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--brass-bright);
+      margin-right: 0.3rem;
+    }
+    #auswahl-leiste select { width: auto; }
+    .werk-haken { width: 18px; height: 18px; accent-color: var(--brass); cursor: pointer; }
+    .werk-karte.entwurf { opacity: 0.62; }
+    .entwurf-marke {
+      font-family: var(--sans);
+      font-size: 0.52rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ivory-dim);
+      border: 1px solid var(--line);
+      padding: 0.12rem 0.35rem;
+      vertical-align: middle;
+      margin-left: 0.4rem;
+    }
+
     /* Werke */
     #werk-toolbar { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1rem; }
     #werk-toolbar select, #werk-toolbar input { width: auto; flex: 1; min-width: 9rem; }
     .werk-karte {
       display: grid;
-      grid-template-columns: 3.4rem 1fr auto auto;
+      grid-template-columns: auto 3.4rem 1fr auto auto;
       gap: 0.9rem;
       align-items: center;
       padding: 0.7rem 0;
@@ -369,8 +413,11 @@
       #werk-toolbar { flex-direction: column; align-items: stretch; }
       #werk-toolbar select, #werk-toolbar input { width: 100%; }
 
-      .werk-karte { grid-template-columns: 3.4rem 1fr; gap: 0.6rem 0.8rem; }
-      .werk-karte .badge { grid-column: 2; justify-self: start; }
+      .werk-karte { grid-template-columns: auto 3.4rem 1fr; gap: 0.6rem 0.8rem; }
+      .werk-karte .badge { grid-column: 3; justify-self: start; }
+      .kuenstler-zeile { grid-template-columns: 1fr; }
+      #auswahl-leiste { flex-direction: column; align-items: stretch; }
+      #auswahl-leiste select, #auswahl-leiste button { width: 100%; }
       .werk-aktionen { grid-column: 1 / -1; justify-content: flex-start; }
       .werk-aktionen button { min-height: 40px; }
 
@@ -455,7 +502,26 @@
         <input id="suche" placeholder="Suchen: Titel oder Künstler …" />
         <button id="werk-neu" class="primaer">+ Neues Werk</button>
       </div>
+      <div id="auswahl-leiste" class="verborgen">
+        <span id="auswahl-anzahl"></span>
+        <select id="massen-saal"><option value="">In Saal verschieben …</option></select>
+        <button type="button" id="massen-verkauft">Als verkauft</button>
+        <button type="button" id="massen-verfuegbar">Als verfügbar</button>
+        <button type="button" id="massen-entwurf">Als Entwurf</button>
+        <button type="button" id="massen-sichtbar">Sichtbar schalten</button>
+        <button type="button" id="massen-loeschen" class="gefahr">Löschen</button>
+        <button type="button" id="auswahl-aufheben">Auswahl aufheben</button>
+      </div>
       <div id="werk-liste"></div>
+    </section>
+
+    <section id="kuenstler-sektion" class="verborgen">
+      <h2>Künstler</h2>
+      <p class="hinweis">
+        Kurzbiografie zu jedem Künstler — erscheint aufklappbar im Werkpanel.
+        Die Liste ergibt sich aus den Werken, es muss nichts angelegt werden.
+      </p>
+      <div id="kuenstler-liste-verwaltung"></div>
     </section>
 
     <section id="saele-sektion" class="verborgen">
@@ -537,6 +603,7 @@
         </ol>
       </details>
       <label class="zeile"><input id="e-verkauft" type="checkbox" />Verkauft</label>
+      <label class="zeile"><input id="e-entwurf" type="checkbox" />Entwurf — noch nicht im Showroom zeigen</label>
       <label>Beschreibung (Saaltext)<textarea id="e-beschreibung" rows="3"></textarea></label>
       <ul id="editor-fehler"></ul>
       <div class="dialog-leiste">
@@ -1173,10 +1240,11 @@
 
     // ————— Rendern —————
     function renderAlles() {
-      ["galerie-sektion", "saele-sektion", "uebersicht", "werke-sektion"].forEach((id) =>
-        $(id).classList.remove("verborgen"));
+      ["galerie-sektion", "saele-sektion", "uebersicht", "werke-sektion", "kuenstler-sektion"]
+        .forEach((id) => $(id).classList.remove("verborgen"));
       renderUebersicht();
       renderKuenstlerliste();
+      renderKuenstler();
       $("g-name").value = daten.galerie.name || "";
       $("g-waehrung").value = daten.galerie.waehrung || "EUR";
       $("g-email").value = daten.galerie.email || "";
@@ -1289,6 +1357,47 @@
       });
     }
 
+    // ————— Künstler: Kurzbiografien —————
+    // Die Liste ergibt sich aus den Werken; der Händler pflegt nur die Texte.
+    function renderKuenstler() {
+      if (!Array.isArray(daten.kuenstler)) daten.kuenstler = [];
+      const namen = [...new Set(daten.werke.map((w) => w.kuenstler).filter(Boolean))].sort();
+      const wrap = $("kuenstler-liste-verwaltung");
+      wrap.innerHTML = "";
+      if (!namen.length) {
+        wrap.innerHTML = '<p class="hinweis">Noch keine Künstler — legen Sie zuerst ein Werk an.</p>';
+        return;
+      }
+      namen.forEach((name) => {
+        let eintrag = daten.kuenstler.find((k) => k.name === name);
+        if (!eintrag) {
+          eintrag = { name, biografie: "" };
+          daten.kuenstler.push(eintrag);
+        }
+        const anzahl = daten.werke.filter((w) => w.kuenstler === name).length;
+        const zeile = document.createElement("div");
+        zeile.className = "kuenstler-zeile";
+        zeile.innerHTML = `
+          <div>
+            <div class="werk-titel">${esc(name)}</div>
+            <div class="werk-sub">${anzahl} Werk(e)</div>
+          </div>
+        `;
+        const feld = document.createElement("textarea");
+        feld.rows = 3;
+        feld.placeholder = "Kurzbiografie — erscheint aufklappbar im Werkpanel (2–4 Sätze)";
+        feld.value = eintrag.biografie || "";
+        feld.addEventListener("input", () => {
+          eintrag.biografie = feld.value;
+          markiereGeaendert();
+        });
+        zeile.appendChild(feld);
+        wrap.appendChild(zeile);
+      });
+      // verwaiste Einträge (Künstler ohne Werke) entfernen
+      daten.kuenstler = daten.kuenstler.filter((k) => namen.includes(k.name));
+    }
+
     // Vorschlagsliste gegen Schreibvarianten desselben Künstlers
     function renderKuenstlerliste() {
       const namen = [...new Set(daten.werke.map((w) => w.kuenstler).filter(Boolean))].sort();
@@ -1368,12 +1477,68 @@
     $("filter-saal").addEventListener("change", renderWerke);
     $("suche").addEventListener("input", renderWerke);
 
+    // ————— Mehrfachauswahl: Ausstellungswechsel in einem Zug —————
+    const auswahl = new Set(); // Werk-IDs
+
+    function ausgewaehlteWerke() {
+      return daten.werke.filter((w) => auswahl.has(w.id));
+    }
+
+    function zeigeAuswahlLeiste() {
+      const n = auswahl.size;
+      $("auswahl-leiste").classList.toggle("verborgen", n === 0);
+      $("auswahl-anzahl").textContent = `${n} ausgewählt`;
+    }
+
+    function massenAktion(fn) {
+      const werke = ausgewaehlteWerke();
+      if (!werke.length) return;
+      werke.forEach(fn);
+      markiereGeaendert();
+      renderWerke();
+      renderSaele();
+      zeigeAuswahlLeiste();
+    }
+
+    $("massen-verkauft").addEventListener("click", () => massenAktion((w) => (w.verkauft = true)));
+    $("massen-verfuegbar").addEventListener("click", () => massenAktion((w) => (w.verkauft = false)));
+    $("massen-entwurf").addEventListener("click", () => massenAktion((w) => (w.sichtbar = false)));
+    $("massen-sichtbar").addEventListener("click", () =>
+      massenAktion((w) => delete w.sichtbar)
+    );
+    $("massen-saal").addEventListener("change", (e) => {
+      const ziel = e.target.value;
+      if (!ziel) return;
+      massenAktion((w) => (w.raum = ziel));
+      e.target.value = "";
+    });
+    $("massen-loeschen").addEventListener("click", () => {
+      const werke = ausgewaehlteWerke();
+      if (!werke.length) return;
+      if (!confirm(`${werke.length} Werk(e) endgültig löschen?`)) return;
+      daten.werke = daten.werke.filter((w) => !auswahl.has(w.id));
+      auswahl.clear();
+      markiereGeaendert();
+      renderWerke();
+      renderSaele();
+      zeigeAuswahlLeiste();
+    });
+    $("auswahl-aufheben").addEventListener("click", () => {
+      auswahl.clear();
+      renderWerke();
+      zeigeAuswahlLeiste();
+    });
+
     function renderWerke() {
       const filter = $("filter-saal");
       const vorher = filter.value;
-      filter.innerHTML = '<option value="">Alle Säle</option>' +
-        daten.raeume.map((r) => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join("");
+      const saalOptionen = daten.raeume
+        .map((r) => `<option value="${esc(r.id)}">${esc(r.name)}</option>`)
+        .join("");
+      filter.innerHTML = '<option value="">Alle Säle</option>' + saalOptionen;
       filter.value = vorher;
+      $("massen-saal").innerHTML =
+        '<option value="">In Saal verschieben …</option>' + saalOptionen;
 
       const suchwort = $("suche").value.trim().toLowerCase();
       const liste = $("werk-liste");
@@ -1390,13 +1555,27 @@
           const preis = werk.preis == null
             ? "Preis auf Anfrage"
             : new Intl.NumberFormat("de-DE", { style: "currency", currency: daten.galerie.waehrung || "EUR", maximumFractionDigits: 0 }).format(werk.preis);
+          const entwurf = werk.sichtbar === false;
+          if (entwurf) karte.classList.add("entwurf");
           karte.innerHTML = `
             <div class="werk-thumb">${werk.bild ? `<img alt="" />` : "Platz-<br>halter"}</div>
             <div>
-              <div class="werk-titel">${esc(werk.titel)}</div>
+              <div class="werk-titel">${esc(werk.titel)}${entwurf ? ' <span class="entwurf-marke">Entwurf</span>' : ""}</div>
               <div class="werk-sub">${esc(werk.kuenstler)}, ${esc(werk.jahr)} · ${esc(raum ? raum.name : "?")} · ${esc(werk.breite_cm)}×${esc(werk.hoehe_cm)} cm · ${esc(preis)}</div>
             </div>
           `;
+          // Auswahlkästchen für Massenaktionen (Ausstellungswechsel)
+          const haken = document.createElement("input");
+          haken.type = "checkbox";
+          haken.className = "werk-haken";
+          haken.checked = auswahl.has(werk.id);
+          haken.title = "Für Massenaktionen auswählen";
+          haken.addEventListener("change", () => {
+            if (haken.checked) auswahl.add(werk.id);
+            else auswahl.delete(werk.id);
+            zeigeAuswahlLeiste();
+          });
+          karte.prepend(haken);
           // Verkauft/Verfügbar ist der häufigste Vorgang überhaupt — er darf
           // nicht fünf Klicks durch den Editor kosten
           const status = document.createElement("button");
@@ -1507,6 +1686,7 @@
       // fertige Erfolgs-URL für genau dieses Werk (in Stripe einzufügen)
       $("e-erfolg-url").value = `${SHOWROOM}?erworben=${werk.id}`;
       $("e-verkauft").checked = !!werk.verkauft;
+      $("e-entwurf").checked = werk.sichtbar === false;
       $("e-beschreibung").value = werk.beschreibung || "";
       $("editor-fehler").innerHTML = "";
       ratioVorschau();
@@ -1568,6 +1748,7 @@
         preis: $("e-preis").value.trim() === "" ? null : +$("e-preis").value,
         bild: $("e-bild").value.trim() || null,
         verkauft: $("e-verkauft").checked,
+        ...($("e-entwurf").checked ? { sichtbar: false } : {}),
         beschreibung: $("e-beschreibung").value,
       };
       const stripe = $("e-stripe").value.trim();

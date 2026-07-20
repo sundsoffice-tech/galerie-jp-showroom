@@ -46,6 +46,29 @@ bearbeiten → herunterladen → auf GitHub ersetzen; Fotos manuell nach
 `public/werke/`). Die Verwaltungs-Seite liegt außerhalb des Builds und wird
 **nie mit deployt**; der Schlüssel bleibt im Browser des Händlers.
 
+### Was die Verwaltung kann
+
+- **Überblick** beim Öffnen: Bestand, verfügbar/verkauft, Bestandswert — und
+  „Das fehlt noch" (Werke ohne Foto/Preis/Saaltext, überbelegte Säle,
+  fehlender Web3Forms-Schlüssel). Jeder Punkt springt zur betroffenen Stelle.
+- **Verkauft/Verfügbar mit einem Klick** in der Werkliste — der häufigste
+  Vorgang braucht keinen Editor.
+- **Fotos**: Hineinziehen genügt, Handyfotos werden automatisch auf
+  Galerie-Maß gebracht. In der **Foto-Werkstatt** lässt sich zuschneiden,
+  um 90° drehen und schief Fotografiertes gerade rücken. Weicht das
+  Seitenverhältnis von den eingetragenen Maßen ab, warnt die Verwaltung.
+- **Vorschau**: der echte Showroom mit den noch unveröffentlichten Daten
+  inklusive neuer Fotos — Kontrolle vor der Freigabe.
+- **Entwürfe** (`sichtbar: false`): Werke vorbereiten, ohne sie zu zeigen.
+- **Mehrfachauswahl** für Ausstellungswechsel: mehrere Werke auf einmal in
+  einen anderen Saal, auf verkauft/verfügbar, auf Entwurf oder löschen.
+- **Künstler**: Kurzbiografie je Künstler, erscheint aufklappbar im
+  Werkpanel. Die Liste ergibt sich aus den Werken.
+- **Reihenfolge = Hängung**: ↑/↓ ordnen die Werke an den Wänden.
+- **Konfliktschutz**: Hat zwischenzeitlich jemand anders veröffentlicht,
+  warnt die Verwaltung, statt fremde Änderungen zu überschreiben.
+- Läuft auf dem **Handy** — vor dem Werk stehen, fotografieren, anlegen.
+
 ### Werk-Felder
 
 ```json

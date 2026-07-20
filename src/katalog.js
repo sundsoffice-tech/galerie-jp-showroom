@@ -8,9 +8,21 @@ import daten from "./data/werke.json";
 import { KONFIG } from "./konfig.js";
 import { IST_TOUCH, IST_SCHWACH } from "./geraet.js";
 
+// Entwürfe (sichtbar: false) existieren für die Galerie schlicht nicht —
+// so kann der Händler Werke vorbereiten, ohne dass Besucher sie sehen.
+function nurSichtbare(liste) {
+  return (liste || []).filter((w) => w.sichtbar !== false);
+}
+
 export const galerie = daten.galerie;
 export const raeume = daten.raeume;
-export const werke = daten.werke;
+export const werke = nurSichtbare(daten.werke);
+export const kuenstler = daten.kuenstler ? [...daten.kuenstler] : [];
+
+// Kurzbiografie zu einem Künstlernamen (aus der Verwaltung gepflegt)
+export function kuenstlerBio(name) {
+  return kuenstler.find((k) => k.name === name)?.biografie?.trim() || "";
+}
 
 // Die Verwaltung veröffentlicht direkt ins Repo; der Live-Showroom lädt den
 // Katalog dann zur Laufzeit von dort (main.js). Die Arrays werden IN-PLACE
@@ -23,7 +35,9 @@ export function initKatalog(neueDaten, bildBasis = null, bilder = null) {
   raeume.length = 0;
   raeume.push(...neueDaten.raeume);
   werke.length = 0;
-  werke.push(...neueDaten.werke);
+  werke.push(...nurSichtbare(neueDaten.werke));
+  kuenstler.length = 0;
+  kuenstler.push(...(neueDaten.kuenstler || []));
   externeBildBasis = bildBasis;
   direkteBilder = bilder;
   bildCache.clear();

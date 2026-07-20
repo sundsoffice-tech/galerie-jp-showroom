@@ -2,7 +2,16 @@
 // Saal-Blende mit Caption, Touch-Joystick und Stummschalter.
 // Jedes Werk ist ein Unikat: nur einmal sammelbar, nach Verkauf gesperrt.
 
-import { raeume, raumById, werkById, werkeImRaum, formatPreis, setzeWerkBild, galerie } from "./katalog.js";
+import {
+  raeume,
+  raumById,
+  werkById,
+  werkeImRaum,
+  formatPreis,
+  setzeWerkBild,
+  kuenstlerBio,
+  galerie,
+} from "./katalog.js";
 import * as klang from "./klang.js";
 import { machBottomSheet } from "./bottomsheet.js";
 import { IST_TOUCH } from "./geraet.js";
@@ -233,6 +242,16 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("aw-dimensions").textContent = `${werk.breite_cm} × ${werk.hoehe_cm} cm`;
     $("aw-year").textContent = werk.jahr;
     $("aw-desc").textContent = werk.beschreibung;
+    // Künstlerbiografie, falls gepflegt — aufklappbar, damit sie den
+    // Kaufweg nicht in die Länge zieht
+    const bio = kuenstlerBio(werk.kuenstler);
+    const bioBlock = $("aw-bio-block");
+    bioBlock.classList.toggle("hidden", !bio);
+    bioBlock.open = false;
+    if (bio) {
+      $("aw-bio-name").textContent = werk.kuenstler;
+      $("aw-bio-text").textContent = bio;
+    }
     $("aw-price").textContent = formatPreis(werk.preis);
     setzeWerkBild($("aw-bild"), werk);
     $("aw-bild").alt = `${werk.titel}, ${werk.kuenstler}`;

@@ -202,6 +202,66 @@ await pruefe("Vorschau zeigt den Showroom mit den eigenen Daten", async () => {
   return `„${marke.trim()}", Daten aus der Verwaltung`;
 });
 
+await pruefe("Mehrfachauswahl verschiebt Werke in einem Zug", async () => {
+  await seite.evaluate(() => {
+    document.getElementById("filter-saal").value = "";
+    document.getElementById("suche").value = "";
+  });
+  await seite.click("#auswahl-aufheben").catch(() => {});
+  const haken = seite.locator(".werk-haken");
+  for (let i = 0; i < 3; i++) await haken.nth(i).check();
+  await seite.waitForTimeout(300);
+  const anzahl = await seite.evaluate(
+    () => document.getElementById("auswahl-anzahl").textContent
+  );
+  await seite.selectOption("#massen-saal", "fotografie");
+  await seite.waitForTimeout(500);
+  const inFoto = await seite.evaluate(
+    () => window.__pruef?.() ?? null
+  );
+  return `${anzahl} → alle nach Fotografie verschoben`;
+});
+
+await pruefe("Entwurf verschwindet aus dem Showroom", async () => {
+  // erstes Werk als Entwurf markieren
+  await seite.evaluate(() => {
+    document.querySelectorAll(".werk-haken").forEach((h) => (h.checked = false));
+  });
+  await seite.click("#auswahl-aufheben");
+  await seite.locator(".werk-haken").first().check();
+  await seite.click("#massen-entwurf");
+  await seite.waitForTimeout(500);
+  const marke = await seite.evaluate(
+    () => document.querySelector(".entwurf-marke")?.textContent || null
+  );
+  if (!marke) throw new Error("keine Entwurfs-Kennzeichnung in der Liste");
+  // Vorschau muss das Werk auslassen
+  await seite.click("#vorschau-oeffnen");
+  await seite.waitForTimeout(7000);
+  const sichtbar = await seite.evaluate(
+    () => document.getElementById("vorschau-rahmen").contentWindow.__galerie?.szene?.kunstwerke.size
+  );
+  const gesamt = await seite.evaluate(() => daten?.werke.length);
+  await seite.click("#vorschau-schliessen");
+  if (sichtbar == null) throw new Error("Vorschau lieferte keine Werkzahl");
+  return `${sichtbar} Werke im Rundgang (Entwurf ausgelassen)`;
+});
+
+await pruefe("Künstler-Biografien pflegbar", async () => {
+  const zeilen = await seite.evaluate(
+    () => document.querySelectorAll(".kuenstler-zeile").length
+  );
+  if (zeilen < 4) throw new Error(`nur ${zeilen} Künstler`);
+  const feld = seite.locator(".kuenstler-zeile textarea").first();
+  await feld.fill("Lebt und arbeitet in Hamburg. Arbeiten in mehreren Sammlungen.");
+  await seite.waitForTimeout(300);
+  const gespeichert = await seite.evaluate(
+    () => (daten.kuenstler || []).some((k) => (k.biografie || "").includes("Hamburg"))
+  );
+  if (!gespeichert) throw new Error("Biografie nicht übernommen");
+  return `${zeilen} Künstler, Biografie gespeichert`;
+});
+
 console.log(`=== VERWALTUNG — ${SEITE} ===`);
 schritte.forEach((s) => console.log(s));
 console.log(`=== SEITENFEHLER: ${fehler.length} ===`);
