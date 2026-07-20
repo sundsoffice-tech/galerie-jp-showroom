@@ -319,6 +319,118 @@ html.touch .hint-touch { display: inline; }
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.6);
 }
 
+/* ————— Mini-Onboarding: drei Handgriffe, dann ist es weg —————
+   Sitzt oben mittig: unter der Kopfleiste, aber über Joystick und
+   Saal-Navigation, damit es auf keinem Gerät etwas verdeckt. */
+
+#onboarding {
+  position: fixed;
+  z-index: 22; /* über den Leisten (20), unter den Panels (30) */
+  top: calc(5.6rem + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 1.05rem 1.7rem 0.85rem;
+  text-align: center;
+  /* Material wie Saal-Leiste und Kopfknöpfe: Rauchglas mit Haarlinie. Ein
+     weicher Farbverlauf als Untergrund wurde verworfen — vor heller Wand
+     stand er als grauer Fleck im Saal, ganz ohne Fläche wiederum verlor
+     die helle Schrift auf hellem Putz jeden Kontrast. */
+  background: var(--glass-soft);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none; /* der Saal bleibt anklickbar — nur der Knopf nicht */
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+#onboarding.sichtbar {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.ob-punkte {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.ob-punkt {
+  width: 1.1rem;
+  height: 2px;
+  background: rgba(237, 231, 220, 0.3);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  transition: background 0.4s ease, width 0.4s ease;
+}
+.ob-punkt.aktiv { background: var(--brass); width: 1.8rem; }
+.ob-punkt.erledigt { background: var(--brass-bright); }
+
+.ob-titel {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--ivory);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.7);
+  transition: color 0.35s ease;
+}
+.ob-wie {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--ivory-dim);
+  margin-top: 0.45rem;
+  min-height: 1.1em; /* kein Springen, wenn die Zeile leer wird */
+}
+
+/* Gelungen: die Zeile wird zur Bestätigung, der Haken schiebt sich davor */
+#onboarding.gelungen .ob-titel { color: var(--brass-bright); }
+#onboarding.gelungen .ob-titel::before {
+  content: "✓";
+  margin-right: 0.45rem;
+  font-family: var(--sans);
+  font-size: 0.8em;
+  animation: ob-haken 0.45s ease;
+}
+@keyframes ob-haken {
+  0% { opacity: 0; transform: scale(0.4); }
+  60% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+#onboarding.abschied .ob-titel { font-size: 1.1rem; color: var(--ivory-dim); }
+
+.ob-skip {
+  pointer-events: auto;
+  margin-top: 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(237, 231, 220, 0.5);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  transition: color 0.25s ease;
+}
+.ob-skip:hover { color: var(--ivory); }
+
+/* Auf dem Telefon steht die Kopfleiste tiefer und ist voller — die Karte
+   muss darunter bleiben, sonst beschneidet sie die Knöpfe. */
+@media (max-width: 700px) {
+  #onboarding {
+    top: calc(7rem + env(safe-area-inset-top));
+    padding: 1.2rem 1.2rem 1rem;
+  }
+  .ob-titel { font-size: 1.3rem; }
+  .ob-skip { padding: 0.5rem 0.9rem; } /* Fingerfläche */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #onboarding { transition: opacity 0.2s ease; }
+  #onboarding.gelungen .ob-titel::before { animation: none; }
+}
+
 /* ————— Touch-Joystick (fester Rauchglas-Ring links unten) ————— */
 
 #joystick {

@@ -81,6 +81,15 @@ bearbeiten → herunterladen → auf GitHub ersetzen; Fotos manuell nach
 - **Künstler**: Kurzbiografie je Künstler, erscheint aufklappbar im
   Werkpanel. Die Liste ergibt sich aus den Werken.
 - **Reihenfolge = Hängung**: ↑/↓ ordnen die Werke an den Wänden.
+- **Säle anlegen**: Name tippen, Enter — Nummer (Saal IV …), ID und
+  Verschiebe-Menü ergeben sich von selbst. Je Saal wählt eine **Stimmung**
+  (Hell · Warm · Dunkel) Wandton, Lichtfarbe und Bankleder; die Werte dazu
+  stehen in `SAAL_STIMMUNGEN` (`src/konfig.js`), wo sich auch eigene
+  Stimmungen ergänzen lassen. Ein neuer Saal wird hinten angebaut und **erbt
+  die zwei Stirnwand-Plätze vom bisher letzten** — der verliert sie, was die
+  Verwaltung sofort in den Kapazitäten zeigt. Leere Säle und Säle ohne
+  Begleittext meldet der Überblick, damit niemand Besucher durch einen
+  kahlen Raum schickt.
 - **Konfliktschutz**: Hat zwischenzeitlich jemand anders veröffentlicht,
   warnt die Verwaltung, statt fremde Änderungen zu überschreiben.
 - Läuft auf dem **Handy** — vor dem Werk stehen, fotografieren, anlegen.
@@ -153,6 +162,11 @@ Ein automatischer Durchlauf prüft den kompletten Kaufweg (Eintreten → Katalog
 Werk → Sammlung → Kasse → Reservierung → Saalwechsel) auf Desktop **und** im
 Mobil-Viewport, inklusive Konsolenfehler:
 
+`npm test` deckt inzwischen auch das Mini-Onboarding und die Verwaltung ab —
+letztere bis in den 3D-Raum hinein: Saal anlegen, Stimmung wählen, acht Werke
+hineinlegen und nachmessen, dass alle acht hängen (3 Nord · 3 Süd · 2
+Stirnwand) und die dunkle Wandfarbe wirklich ankommt.
+
 ```bash
 npm run dev          # in einem Terminal
 npm test             # in einem zweiten (Port ggf. in package.json anpassen)
@@ -184,4 +198,12 @@ Weiterbauen keine externen Einbindungen hinzufügen.
 - Steuerung: Ziehen = Umsehen · WASD/Klick auf Boden = Gehen · Klick auf
   Werk = Bogen-Kamerafahrt + Panel (2. Klick = Nahzoom) · ESC = schließen ·
   Touch: Joystick + Tippen, Bottom-Sheets, Blick-Label
+- **Mini-Onboarding** (`src/onboarding.js`): beim ersten Besuch nennt eine
+  Karte drei Handgriffe — umsehen, gehen, ein Werk öffnen — und hakt jeden
+  ab, sobald der Besucher ihn *getan* hat. Gemessen wird allein an der
+  Kamera (gedrehter Winkel, gelaufene Strecke, Fokus), das Modul greift
+  weder in Steuerung noch UI ein. Wer den Handgriff schon konnte, bekommt
+  sofort den Haken statt einer Belehrung. Danach ist es dauerhaft weg
+  (`localStorage`), und die Eintrittsseite nennt wieder nur kurz die
+  Bedienung. Erzwingen/abschalten zum Vorführen: `?onboarding=1` bzw. `=0`.
 - Deep-Links: `#w-005` fährt nach dem Eintreten direkt vor das Werk

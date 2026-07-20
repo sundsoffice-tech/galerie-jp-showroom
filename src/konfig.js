@@ -7,6 +7,31 @@
 // die Säle liegen im Abend-Dämmer, nur die Werke stehen im Licht.
 // ————————————————————————————————————————————————
 
+// ————— Saal-Stimmungen —————
+// Drei Grundstimmungen, aus denen die Verwaltung je Saal eine auswählt
+// (Feld `stil` in werke.json). Wer einen ganz eigenen Saal will, legt hier
+// einen weiteren Eintrag an und trägt dessen Schlüssel im Saal ein.
+export const SAAL_STIMMUNGEN = {
+  hell: {
+    titel: "Hell",
+    hinweis: "Heller Putz, ruhiges Licht — der klassische Ausstellungssaal.",
+    wand: 0xeae3d6, spotFarbe: 0xffdcae, lichtFaktor: 1.0, poolFaktor: 1.0,
+    lettering: "#2b2721", bank: 0x4a3524,
+  },
+  warm: {
+    titel: "Warm",
+    hinweis: "Leicht wärmeres Licht, kräftigere Lichtinseln — für farbige Malerei.",
+    wand: 0xe6e5df, spotFarbe: 0xffe6c6, lichtFaktor: 1.0, poolFaktor: 1.15,
+    lettering: "#2b2721", bank: 0x33281e,
+  },
+  dunkel: {
+    titel: "Dunkel",
+    hinweis: "Anthrazit gehaltener Saal, die Werke stehen allein im Licht — der Höhepunkt.",
+    wand: 0x3a3733, spotFarbe: 0xfff3e4, lichtFaktor: 0.55, poolFaktor: 1.5,
+    lettering: "#ede7dc", bank: 0x191714,
+  },
+};
+
 export const KONFIG = {
   raum: {
     breite: 14, // Meter pro Saal (x-Richtung)
@@ -70,13 +95,14 @@ export const KONFIG = {
     plaetzeStirnwand: 2,
   },
 
-  // Raum-Persönlichkeit je Saal-ID; "standard" greift für unbekannte Säle.
-  // Saal III (Fotografie) ist der inszenierte dunkle Höhepunkt.
+  // Ein Saal wählt seine Stimmung über das Feld `stil` (s. SAAL_STIMMUNGEN).
+  // Fehlt es, greifen die Vorgaben der Demo-Säle nach Saal-ID, sonst "hell".
   saalStile: {
-    standard: { wand: 0xeae3d6, spotFarbe: 0xffdcae, lichtFaktor: 1.0, poolFaktor: 1.0, lettering: "#2b2721", bank: 0x4a3524 },
-    moderne: { wand: 0xeae3d6, spotFarbe: 0xffdcae, lichtFaktor: 1.0, poolFaktor: 1.0, lettering: "#2b2721", bank: 0x4a3524 },
-    abstraktion: { wand: 0xe6e5df, spotFarbe: 0xffe6c6, lichtFaktor: 1.0, poolFaktor: 1.15, lettering: "#2b2721", bank: 0x33281e },
-    fotografie: { wand: 0x3a3733, spotFarbe: 0xfff3e4, lichtFaktor: 0.55, poolFaktor: 1.5, lettering: "#ede7dc", bank: 0x191714 },
+    standard: SAAL_STIMMUNGEN.hell,
+    ...SAAL_STIMMUNGEN,
+    moderne: SAAL_STIMMUNGEN.hell,
+    abstraktion: SAAL_STIMMUNGEN.warm,
+    fotografie: SAAL_STIMMUNGEN.dunkel,
   },
 };
 

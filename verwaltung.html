@@ -184,7 +184,7 @@
     /* Säle */
     .saal-zeile {
       display: grid;
-      grid-template-columns: 6rem 1fr 2fr auto auto;
+      grid-template-columns: 6rem 1fr 2fr 7.5rem auto auto;
       gap: 0.7rem;
       align-items: center;
       padding: 0.6rem 0;
@@ -407,6 +407,7 @@
 
       .saal-zeile { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
       .saal-zeile input[data-feld="beschreibung"] { grid-column: 1 / -1; }
+      .saal-zeile select[data-feld="stil"] { grid-column: 1 / -1; }
       .saal-zeile .kapazitaet { grid-column: 1 / -1; }
       .saal-zeile button { grid-column: 1 / -1; }
 
@@ -528,9 +529,12 @@
       <h2>Säle</h2>
       <div id="saal-liste"></div>
       <p class="hinweis" style="margin-top:0.8rem">
+        Spalten: Nummer · Name · Begleittext für die Saaltafel · Stimmung.
         Plätze pro Saal: 6 an den Längswänden, +2 an der Stirnwand im letzten Saal.
         Die Eingangswand bleibt frei (Entrée mit Wortmarke). Überzählige Werke
-        werden im Showroom nicht gehängt.
+        werden im Showroom nicht gehängt. Die Reihenfolge der Säle ist die
+        Reihenfolge des Rundgangs — ein neuer Saal wird hinten angebaut und
+        erbt die Stirnwand-Plätze vom bisher letzten.
       </p>
     </section>
 
@@ -687,6 +691,20 @@
     const API = `https://api.github.com/repos/${REPO}/contents/`;
     const RAW = `https://raw.githubusercontent.com/${REPO}/master/`;
     const TOKEN_KEY = "galerie-verwaltung-token";
+
+    // Saal-Stimmungen zur Auswahl. Die Schlüssel müssen zu SAAL_STIMMUNGEN in
+    // src/konfig.js passen — dort stehen die tatsächlichen Farben und Lichter.
+    // (Bewusst hier wiederholt: die Verwaltung soll ohne Build und ohne
+    // Import aus dem Quellcode laufen, auch per Doppelklick von der Platte.)
+    const STIMMUNGEN = [
+      ["hell", "Hell", "Heller Putz, ruhiges Licht — der klassische Ausstellungssaal."],
+      ["warm", "Warm", "Wärmeres Licht, kräftigere Lichtinseln — für farbige Malerei."],
+      ["dunkel", "Dunkel", "Anthrazit gehalten, die Werke stehen allein im Licht."],
+    ];
+    // Die drei Demo-Säle hatten ihre Stimmung ursprünglich fest über die
+    // Saal-ID; ohne eingetragenes `stil` zeigt die Auswahl genau das an.
+    const STIMMUNG_ALT = { moderne: "hell", abstraktion: "warm", fotografie: "dunkel" };
+    const stimmungVon = (raum) => raum.stil || STIMMUNG_ALT[raum.id] || "hell";
 
     // Neue/ersetzte Fotos bis zum Veröffentlichen: dateiname -> { base64, dataUrl }
     const neueBilder = new Map();
@@ -1313,6 +1331,21 @@
             raum: raum.id,
           });
         }
+        // Ein leerer Saal wird trotzdem gebaut — der Besucher läuft dann durch
+        // einen kahlen Raum. Das passiert fast zwangsläufig, weil man den Saal
+        // zuerst anlegt und erst danach füllt.
+        if (belegt === 0) {
+          punkte.push({
+            text: `Saal „${raum.name}" ist leer — Besucher stehen dort in einem kahlen Raum`,
+            raum: raum.id,
+          });
+        }
+        if (!(raum.beschreibung || "").trim()) {
+          punkte.push({
+            text: `Saal „${raum.name}" hat keinen Begleittext — die Saaltafel an der Wand bleibt leer`,
+            raum: raum.id,
+          });
+        }
       });
       if (!daten.galerie.web3formsKey?.trim()) {
         punkte.push({ text: "Kein Web3Forms-Schlüssel — Reservierungen kommen nicht per E-Mail an" });
@@ -1426,6 +1459,11 @@
           <input value="${esc(raum.saal)}" data-feld="saal" aria-label="Saal-Nummer" />
           <input value="${esc(raum.name)}" data-feld="name" aria-label="Saal-Name" />
           <input value="${esc(raum.beschreibung)}" data-feld="beschreibung" aria-label="Beschreibung" />
+          <select data-feld="stil" aria-label="Stimmung des Saals">
+            ${STIMMUNGEN.map(([k, t, h]) =>
+              `<option value="${k}" title="${esc(h)}"${stimmungVon(raum) === k ? " selected" : ""}>${t}</option>`
+            ).join("")}
+          </select>
           <span class="kapazitaet ${belegt > kap ? "voll" : ""}">${belegt} / ${kap} Plätzen${belegt > kap ? ` · ${belegt - kap} ungehängt!` : ""}</span>
         `;
         const del = document.createElement("button");
@@ -1445,6 +1483,10 @@
             raum[inp.dataset.feld] = inp.value;
             markiereGeaendert();
           }));
+        zeile.querySelector('select[data-feld="stil"]').addEventListener("change", (e) => {
+          raum.stil = e.target.value;
+          markiereGeaendert();
+        });
         wrap.appendChild(zeile);
       });
       // Neuen Saal direkt anlegen: Name tippen, Enter — fertig
@@ -1463,7 +1505,7 @@
           .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "saal";
         if (daten.raeume.some((r) => r.id === id)) { alert("Einen Saal mit diesem Namen gibt es schon."); return; }
         const roemisch = ["I","II","III","IV","V","VI","VII","VIII"][daten.raeume.length] || (daten.raeume.length + 1);
-        daten.raeume.push({ id, name, saal: `Saal ${roemisch}`, beschreibung: "" });
+        daten.raeume.push({ id, name, saal: `Saal ${roemisch}`, beschreibung: "", stil: "hell" });
         markiereGeaendert();
         renderSaele();
         renderWerke();

@@ -39,8 +39,12 @@ export function raumZentrumX(index) {
   return index * (RAUM_B + WAND_D);
 }
 
+// Die in der Verwaltung gewählte Stimmung schlägt alles andere; ohne Angabe
+// gilt die Vorgabe der Demo-Säle (nach Saal-ID), sonst der helle Standard.
 function stilVon(raum) {
-  return KONFIG.saalStile[raum.id] || KONFIG.saalStile.standard;
+  return (
+    KONFIG.saalStile[raum.stil] || KONFIG.saalStile[raum.id] || KONFIG.saalStile.standard
+  );
 }
 
 function cssFarbe(hex) {
@@ -670,6 +674,8 @@ export function erstelleSzene(canvas) {
     klickbare,
     hindernisse,
     kunstwerke,
+    // aufgelöste Stimmung je Saal — nur zum Nachsehen (Tests, Fehlersuche)
+    saalStile: raeume.map(stilVon),
     erlaubt,
     verboten,
     aktualisiereVerkauft,

@@ -20,6 +20,7 @@ import { erstelleSteuerung } from "./steuerung.js";
 import { erstelleUI, ladeVerkaufte } from "./ui.js";
 import { erstelleIntro } from "./intro.js";
 import { erstelleTour } from "./tour.js";
+import { erstelleOnboarding, sollOnboardingLaufen } from "./onboarding.js";
 import * as klang from "./klang.js";
 
 // ————— Live-Katalog —————
@@ -175,6 +176,13 @@ if (window.visualViewport) {
 if (IM_3D) {
   // ——————————————— 3D-Rundgang ———————————————
 
+  // Beim ersten Besuch übernimmt das Onboarding drinnen die Einweisung —
+  // dann muss die Eintrittsseite die Bedienung nicht vorwegnehmen.
+  if (sollOnboardingLaufen()) {
+    document.querySelector(".intro-hints").innerHTML =
+      "<span>Der Rundgang zeigt Ihnen die drei Handgriffe beim Eintreten.</span>";
+  }
+
   // Bloom ist Kür: scheitert der Shader-Aufbau auf einer exotischen GPU,
   // läuft der Rundgang schlicht ohne Nachbearbeitung weiter.
   if (TIER === "A") {
@@ -267,6 +275,14 @@ if (IM_3D) {
   const joystick = IST_TOUCH ? erstelleJoystick(steuerung.joy) : null;
   let joystickGezeigt = false;
 
+  // ————— Mini-Onboarding (nur beim ersten Besuch) —————
+  // Läuft erst nach dem Intro an; die Privatführung übernimmt sonst die
+  // Kamera und würde dem Besucher seine eigenen Handgriffe abnehmen.
+  const onboarding = sollOnboardingLaufen()
+    ? erstelleOnboarding({ camera: szene.camera, steuerung, istTouch: IST_TOUCH })
+    : null;
+  document.getElementById("tour-open").addEventListener("click", () => onboarding?.beende());
+
   // ————— Render-Loop —————
   const clock = new THREE.Clock();
   let letzterRaum = -1;
@@ -283,6 +299,7 @@ if (IM_3D) {
       }
       tour.update();
       steuerung.update(dt);
+      onboarding?.update(dt);
       // FOV weich nachführen
       const fovZiel = steuerung.fovZiel();
       if (Math.abs(szene.camera.fov - fovZiel) > 0.01) {

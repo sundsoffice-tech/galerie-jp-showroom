@@ -262,6 +262,102 @@ await pruefe("Künstler-Biografien pflegbar", async () => {
   return `${zeilen} Künstler, Biografie gespeichert`;
 });
 
+await pruefe("Saal anlegen: Name tippen, Enter", async () => {
+  const vorher = await seite.evaluate(() => ({
+    anzahl: daten.raeume.length,
+    kapLetzter: [...document.querySelectorAll(".kapazitaet")].pop().textContent,
+  }));
+  const feld = seite.locator("#saal-liste input").last();
+  await feld.fill("Skulptur");
+  await feld.press("Enter");
+  await seite.waitForTimeout(400);
+  const neu = await seite.evaluate(() => {
+    const r = daten.raeume[daten.raeume.length - 1];
+    const kaps = [...document.querySelectorAll(".kapazitaet")].map((e) => e.textContent);
+    return {
+      anzahl: daten.raeume.length,
+      id: r.id, saal: r.saal, stil: r.stil,
+      kapNeu: kaps[kaps.length - 1],
+      kapVorletzter: kaps[kaps.length - 2],
+      imVerschiebeMenue: [...document.querySelectorAll("#massen-saal option")].some(
+        (o) => o.value === "skulptur"
+      ),
+    };
+  });
+  if (neu.anzahl !== vorher.anzahl + 1) throw new Error("kein Saal dazugekommen");
+  if (neu.id !== "skulptur") throw new Error(`ID „${neu.id}" statt „skulptur"`);
+  if (!/IV/.test(neu.saal)) throw new Error(`Nummer „${neu.saal}" statt „Saal IV"`);
+  if (neu.stil !== "hell") throw new Error(`Stimmung „${neu.stil}" statt „hell"`);
+  if (!neu.imVerschiebeMenue) throw new Error("fehlt im Verschiebe-Menü");
+  // Die Stirnwand-Plätze wandern immer zum jeweils letzten Saal
+  if (!/\/ 8 /.test(neu.kapNeu)) throw new Error(`neuer Saal hat ${neu.kapNeu}, erwartet 8 Plätze`);
+  if (!/\/ 6 /.test(neu.kapVorletzter))
+    throw new Error(`bisher letzter Saal behielt die Stirnwand: ${neu.kapVorletzter}`);
+  return `${neu.saal} „${neu.id}", ${neu.kapNeu.trim()} · Stirnwand abgegeben (${vorher.kapLetzter.trim()} → ${neu.kapVorletzter.trim()})`;
+});
+
+await pruefe("Leerer Saal und fehlender Begleittext werden gemeldet", async () => {
+  const p = await seite.evaluate(() =>
+    [...document.querySelectorAll(".offener-punkt")].map((e) => e.textContent)
+  );
+  if (!p.some((t) => /Skulptur.*leer/.test(t))) throw new Error("leerer Saal nicht gemeldet");
+  if (!p.some((t) => /Skulptur.*Begleittext/.test(t)))
+    throw new Error("fehlender Begleittext nicht gemeldet");
+  return "beide Hinweise stehen im Überblick";
+});
+
+await pruefe("Stimmung des Saals wirkt bis in den Raum", async () => {
+  const wahl = seite.locator('#saal-liste select[data-feld="stil"]').last();
+  await wahl.selectOption("dunkel");
+  await seite.waitForTimeout(300);
+  // acht Werke hineinlegen: 6 Längswand + 2 Stirnwand müssen alle hängen
+  await seite.click("#auswahl-aufheben").catch(() => {});
+  await seite.evaluate(() => {
+    document.getElementById("filter-saal").value = "";
+    document.getElementById("suche").value = "";
+  });
+  // Der Entwurf aus dem vorigen Schritt hinge sonst bewusst nicht mit
+  const entwurf = seite.locator(".werk-karte", { has: seite.locator(".entwurf-marke") });
+  if (await entwurf.count()) {
+    await entwurf.first().locator(".werk-haken").check();
+    await seite.click("#massen-sichtbar");
+    await seite.waitForTimeout(300);
+    await seite.click("#auswahl-aufheben");
+  }
+  const haken = seite.locator(".werk-haken");
+  for (let i = 0; i < 8; i++) await haken.nth(i).check();
+  await seite.selectOption("#massen-saal", "skulptur");
+  await seite.waitForTimeout(500);
+
+  await seite.click("#vorschau-oeffnen");
+  await seite.waitForTimeout(7000);
+  const raum = await seite.evaluate(() => {
+    const w = document.getElementById("vorschau-rahmen").contentWindow;
+    const s = w.__galerie?.szene;
+    if (!s) return null;
+    const stil = s.saalStile[s.saalStile.length - 1];
+    // Der letzte Saal liegt am weitesten rechts; Werke dort einsammeln
+    const grenze = (s.saalStile.length - 1) * 14 - 7;
+    const wand = { nord: 0, sued: 0, stirn: 0 };
+    s.kunstwerke.forEach((v) => {
+      const p = (v.gruppe || v).position;
+      if (p.x < grenze) return;
+      if (Math.abs(p.z + 5) < 0.3) wand.nord++;
+      else if (Math.abs(p.z - 5) < 0.3) wand.sued++;
+      else wand.stirn++;
+    });
+    return { wandFarbe: stil.wand, lichtFaktor: stil.lichtFaktor, wand };
+  });
+  await seite.click("#vorschau-schliessen");
+  if (!raum) throw new Error("Vorschau lieferte keine Szene");
+  if (raum.wandFarbe !== 0x3a3733)
+    throw new Error(`Wandfarbe 0x${raum.wandFarbe.toString(16)} — „dunkel" kam nicht an`);
+  const { nord, sued, stirn } = raum.wand;
+  if (nord + sued + stirn !== 8) throw new Error(`${nord + sued + stirn} von 8 Werken gehängt`);
+  if (stirn !== 2) throw new Error(`${stirn} statt 2 Werke an der Stirnwand`);
+  return `dunkler Saal, alle 8 gehängt (${nord} Nord · ${sued} Süd · ${stirn} Stirnwand)`;
+});
+
 console.log(`=== VERWALTUNG — ${SEITE} ===`);
 schritte.forEach((s) => console.log(s));
 console.log(`=== SEITENFEHLER: ${fehler.length} ===`);
