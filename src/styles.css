@@ -365,6 +365,119 @@ html.touch .hint-touch { display: inline; }
 .ob-punkt.aktiv { background: var(--brass); width: 1.8rem; }
 .ob-punkt.erledigt { background: var(--brass-bright); }
 
+/* ————— Kennbilder: jeder Schritt macht seine Geste vor ————— */
+
+.ob-bild {
+  height: 3.1rem;
+  margin: 0.1rem 0 0.55rem;
+}
+.ob-bild svg {
+  height: 100%;
+  width: auto;
+  overflow: visible;
+  display: block;
+  margin: 0 auto;
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Umsehen: der Zeiger wandert die Spur entlang — bewusst nur waagerecht,
+   genau so weit, wie der Blick im Rundgang schwenken kann */
+.ob-spur { stroke: var(--line); stroke-width: 1.2; }
+.ob-winkel { stroke: var(--brass); opacity: 0.25; }
+.ob-winkel-l { animation: ob-winkel-l 2.6s ease-in-out infinite; }
+.ob-winkel-r { animation: ob-winkel-r 2.6s ease-in-out infinite; }
+.ob-schwenker { animation: ob-schwenken 2.6s ease-in-out infinite; }
+.ob-zeiger { fill: var(--brass-bright); stroke: none; }
+.ob-zeiger-hof { stroke: var(--brass); opacity: 0.3; stroke-width: 1; }
+@keyframes ob-schwenken {
+  0%, 100% { transform: translateX(-30px); }
+  50% { transform: translateX(30px); }
+}
+@keyframes ob-winkel-l {
+  0%, 100% { opacity: 0.85; }
+  45%, 75% { opacity: 0.18; }
+}
+@keyframes ob-winkel-r {
+  0%, 30% { opacity: 0.18; }
+  50% { opacity: 0.85; }
+  90%, 100% { opacity: 0.18; }
+}
+
+/* Gehen: die Taste senkt sich im Takt, der Pfeil zieht nach vorn davon */
+.ob-taste { stroke: var(--brass); animation: ob-taste 1.9s ease-in-out infinite; }
+.ob-tastentext {
+  fill: var(--brass-bright);
+  stroke: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  animation: ob-taste 1.9s ease-in-out infinite;
+}
+.ob-ring { stroke: var(--line); }
+.ob-knauf {
+  fill: var(--brass-bright);
+  stroke: none;
+  animation: ob-knauf 1.9s ease-in-out infinite;
+}
+.ob-pfeil-hoch { stroke: var(--brass); animation: ob-pfeil 1.9s ease-in-out infinite; }
+@keyframes ob-taste {
+  0%, 55%, 100% { transform: translateY(0); opacity: 0.75; }
+  22%, 40% { transform: translateY(2.5px); opacity: 1; }
+}
+@keyframes ob-knauf {
+  0%, 100% { transform: translateY(0); }
+  35%, 55% { transform: translateY(-9px); }
+}
+@keyframes ob-pfeil {
+  0% { opacity: 0; transform: translateY(5px); }
+  35% { opacity: 1; transform: translateY(0); }
+  70%, 100% { opacity: 0; transform: translateY(-5px); }
+}
+
+/* Werk öffnen: der Zeiger fährt auf die Leinwand, die daraufhin aufleuchtet
+   — genau das, was im Saal beim Anklicken passiert */
+.ob-rahmen { stroke: var(--brass); opacity: 0.85; stroke-width: 2; }
+.ob-plakette { stroke: var(--line); stroke-width: 3; } /* die Wandplakette daneben */
+.ob-leinwand {
+  stroke: var(--line);
+  fill: var(--brass-bright);
+  animation: ob-leuchten 2.4s ease-in-out infinite;
+}
+.ob-cursor {
+  fill: var(--ivory);
+  stroke: none;
+  animation: ob-anfahrt 2.4s ease-in-out infinite;
+}
+@keyframes ob-leuchten {
+  0%, 45% { fill-opacity: 0.06; }
+  58%, 78% { fill-opacity: 0.4; }
+  92%, 100% { fill-opacity: 0.06; }
+}
+@keyframes ob-anfahrt {
+  0%, 8% { transform: translate(74px, 34px); opacity: 0; }
+  22% { opacity: 1; }
+  50%, 56% { transform: translate(50px, 21px); opacity: 1; }
+  60% { transform: translate(50px, 21px) scale(0.8); }
+  70%, 86% { transform: translate(50px, 21px); opacity: 1; }
+  100% { transform: translate(74px, 34px); opacity: 0; }
+}
+
+/* Der Haken zeichnet sich selbst — die Belohnung für den Handgriff */
+.ob-haken {
+  stroke: var(--brass-bright);
+  stroke-width: 2.4;
+  stroke-dasharray: 52;
+  stroke-dashoffset: 52;
+  animation: ob-haken 0.55s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@keyframes ob-haken {
+  to { stroke-dashoffset: 0; }
+}
+
 .ob-titel {
   font-family: var(--serif);
   font-size: 1.5rem;
@@ -381,20 +494,8 @@ html.touch .hint-touch { display: inline; }
   min-height: 1.1em; /* kein Springen, wenn die Zeile leer wird */
 }
 
-/* Gelungen: die Zeile wird zur Bestätigung, der Haken schiebt sich davor */
+/* Gelungen: das Kennbild wird zum Haken, die Zeile zur Bestätigung */
 #onboarding.gelungen .ob-titel { color: var(--brass-bright); }
-#onboarding.gelungen .ob-titel::before {
-  content: "✓";
-  margin-right: 0.45rem;
-  font-family: var(--sans);
-  font-size: 0.8em;
-  animation: ob-haken 0.45s ease;
-}
-@keyframes ob-haken {
-  0% { opacity: 0; transform: scale(0.4); }
-  60% { opacity: 1; transform: scale(1.25); }
-  100% { opacity: 1; transform: scale(1); }
-}
 
 #onboarding.abschied .ob-titel { font-size: 1.1rem; color: var(--ivory-dim); }
 
@@ -426,9 +527,14 @@ html.touch .hint-touch { display: inline; }
   .ob-skip { padding: 0.5rem 0.9rem; } /* Fingerfläche */
 }
 
+/* Wer Bewegung abbestellt hat, bekommt die Kennbilder als ruhige Zeichnung:
+   sichtbar bleiben sie, laufen tun sie nicht. */
 @media (prefers-reduced-motion: reduce) {
   #onboarding { transition: opacity 0.2s ease; }
-  #onboarding.gelungen .ob-titel::before { animation: none; }
+  .ob-bild svg * { animation: none !important; }
+  .ob-haken { stroke-dashoffset: 0; }
+  .ob-welle { opacity: 0; }
+  .ob-tipper { transform: none; }
 }
 
 /* ————— Touch-Joystick (fester Rauchglas-Ring links unten) ————— */

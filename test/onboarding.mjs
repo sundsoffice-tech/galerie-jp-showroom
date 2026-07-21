@@ -93,10 +93,15 @@ const wartetAufTitel = (muster, ms = 25000) =>
 
 await pruefe("Gehen hakt den zweiten Handgriff ab", async () => {
   await wartetAufTitel("Gehen Sie hinüber");
+  // Solange gehen, bis der Schritt anerkannt ist: eine feste Tastendauer
+  // reicht bei schwankender Bildrate mal und mal nicht, weil die gelaufene
+  // Strecke an der Simulationszeit hängt, nicht an der Wanduhr.
   await seite.keyboard.down("w");
-  await seite.waitForTimeout(7000);
-  await seite.keyboard.up("w");
-  await wartetAufTitel("Genau so", 12000);
+  try {
+    await wartetAufTitel("Genau so", 60000);
+  } finally {
+    await seite.keyboard.up("w");
+  }
   const k = await karte();
   if (!k.gelungen) throw new Error(`nicht abgehakt, Karte zeigt „${k.titel}"`);
   return `„${k.titel}"`;

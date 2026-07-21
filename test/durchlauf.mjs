@@ -22,8 +22,20 @@ seite.on("console", (m) => {
 seite.on("pageerror", (e) => fehler.push("PAGEERROR: " + (e.stack || e.message)));
 
 const ziel = MOBIL ? URL + (URL.includes("?") ? "&" : "?") + "touch=1" : URL;
+// Gegen die veröffentlichte Seite läuft der Test in ein Rennen um
+// Rechenzeit: die Software-GPU rendert den Saal nur mit wenigen Bildern je
+// Sekunde (der Frametime-Wächter stuft selbst auf Stufe C ab), und
+// Playwrights Klickbarkeitsprüfung braucht mehrere aufeinanderfolgende
+// Einzelbilder. Läuft nebenher noch ein zweiter Test oder ein Dev-Server,
+// verhungert die Prüfung und meldet einen Totalausfall, den es nicht gibt:
+// nachgemessen sind Eintreten-Knopf, Intro und Datenquelle dann völlig in
+// Ordnung, und auf einer ruhigen Maschine gelingt derselbe Aufruf in unter
+// zwei Sekunden. Also: test:live allein laufen lassen.
+const ENTFERNT = /^https?:\/\/(?!localhost|127\.0\.0\.1)/.test(ziel);
+const GEDULD = ENTFERNT ? 30000 : 5000;
 await seite.goto(ziel, { waitUntil: "load", timeout: 60000 });
-await seite.waitForTimeout(3000);
+seite.setDefaultTimeout(30000);
+await seite.waitForTimeout(ENTFERNT ? 6000 : 3000);
 
 const schritte = [];
 const pruefe = async (name, fn) => {
@@ -37,7 +49,8 @@ const pruefe = async (name, fn) => {
 
 // 1. Eintreten
 await pruefe("Eintreten startet den Rundgang", async () => {
-  await seite.click("#enter", { timeout: 5000 });
+  await seite.waitForSelector("#enter", { state: "visible", timeout: GEDULD });
+  await seite.click("#enter", { timeout: GEDULD });
   await seite.waitForTimeout(3800);
   const weg = await seite.evaluate(() => !document.getElementById("intro"));
   if (!weg) throw new Error("Intro-Overlay blieb stehen");

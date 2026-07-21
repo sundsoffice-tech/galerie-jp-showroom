@@ -17,24 +17,70 @@ const SPEICHER = "galerie-onboarding-gesehen";
 const DREHUNG_NOETIG = 0.8; // Bogenmaß, ~46°
 const STRECKE_NOETIG = 2.2; // Meter
 
+// ————— Piktogramme —————
+// Jeder Schritt macht seine Geste vor, statt sie nur zu beschreiben: gezeigt
+// wird genau die Bewegung, die der Besucher gleich selbst ausführt. Alles
+// als Inline-SVG mit CSS-Kennbildern — keine Datei, kein fremder Server.
+
+const BILD_UMSEHEN = `
+  <svg viewBox="0 0 104 52" aria-hidden="true">
+    <path class="ob-winkel ob-winkel-l" d="M14 20 L8 26 L14 32" />
+    <line class="ob-spur" x1="18" y1="26" x2="86" y2="26" />
+    <path class="ob-winkel ob-winkel-r" d="M90 20 L96 26 L90 32" />
+    <g class="ob-schwenker">
+      <circle class="ob-zeiger" cx="52" cy="26" r="6" />
+      <circle class="ob-zeiger-hof" cx="52" cy="26" r="11" />
+    </g>
+  </svg>`;
+
+const BILD_GEHEN_TASTE = `
+  <svg viewBox="0 0 104 52" aria-hidden="true">
+    <path class="ob-pfeil-hoch" d="M52 16 L52 4 M46 10 L52 4 L58 10" />
+    <rect class="ob-taste" x="38" y="22" width="28" height="24" rx="3" />
+    <text class="ob-tastentext" x="52" y="38" text-anchor="middle">W</text>
+  </svg>`;
+
+const BILD_GEHEN_JOYSTICK = `
+  <svg viewBox="0 0 104 52" aria-hidden="true">
+    <path class="ob-pfeil-hoch" d="M52 14 L52 3 M46 9 L52 3 L58 9" />
+    <circle class="ob-ring" cx="52" cy="33" r="15" />
+    <circle class="ob-knauf" cx="52" cy="33" r="6" />
+  </svg>`;
+
+const BILD_WERK = `
+  <svg viewBox="0 0 104 52" aria-hidden="true">
+    <rect class="ob-rahmen" x="37" y="3" width="30" height="40" rx="0.5" />
+    <rect class="ob-leinwand" x="41" y="7" width="22" height="32" rx="0.5" />
+    <line class="ob-plakette" x1="72" y1="30" x2="80" y2="30" />
+    <path class="ob-cursor" d="M0 0 L0 11 L3 8.2 L5 12.4 L7.4 11.2 L5.3 7.1 L9 6.6 Z" />
+  </svg>`;
+
+const BILD_HAKEN = `
+  <svg viewBox="0 0 104 52" aria-hidden="true">
+    <path class="ob-haken" d="M36 27 L47 38 L69 15" />
+  </svg>`;
+
 const SCHRITTE = [
   {
     titel: "Sehen Sie sich um",
-    desktop: "Mit gedrückter Maustaste ziehen",
-    touch: "Mit dem Finger über den Saal ziehen",
+    desktop: "Mit gedrückter Maustaste nach links und rechts ziehen",
+    touch: "Mit dem Finger nach links und rechts ziehen",
     lob: "Der Saal gehört Ihnen.",
+    bild: () => BILD_UMSEHEN,
   },
   {
     titel: "Gehen Sie hinüber",
     desktop: "W A S D — oder auf den Boden klicken",
     touch: "Joystick links unten — oder auf den Boden tippen",
     lob: "Genau so.",
+    bild: (touch) => (touch ? BILD_GEHEN_JOYSTICK : BILD_GEHEN_TASTE),
   },
   {
     titel: "Treten Sie an ein Werk",
     desktop: "Auf ein Bild klicken",
     touch: "Auf ein Bild tippen",
     lob: "Alles Weitere steht auf der Tafel.",
+    bild: () => BILD_WERK,
   },
 ];
 
@@ -58,6 +104,7 @@ export function erstelleOnboarding({ camera, steuerung, istTouch }) {
   karte.setAttribute("aria-live", "polite");
   karte.innerHTML = `
     <div class="ob-punkte">${SCHRITTE.map(() => '<i class="ob-punkt"></i>').join("")}</div>
+    <div class="ob-bild"></div>
     <p class="ob-titel"></p>
     <p class="ob-wie"></p>
     <button type="button" class="ob-skip">Überspringen</button>
@@ -65,6 +112,7 @@ export function erstelleOnboarding({ camera, steuerung, istTouch }) {
   document.body.appendChild(karte);
 
   const elPunkte = [...karte.querySelectorAll(".ob-punkt")];
+  const elBild = karte.querySelector(".ob-bild");
   const elTitel = karte.querySelector(".ob-titel");
   const elWie = karte.querySelector(".ob-wie");
   const elSkip = karte.querySelector(".ob-skip");
@@ -105,6 +153,7 @@ export function erstelleOnboarding({ camera, steuerung, istTouch }) {
       setTimeout(() => karte.remove(), 600);
       return;
     }
+    elBild.innerHTML = "";
     elTitel.textContent = ABSCHIED;
     elWie.textContent = "";
     elSkip.hidden = true;
@@ -118,6 +167,9 @@ export function erstelleOnboarding({ camera, steuerung, istTouch }) {
     index = i;
     sichtbarSeit = 0;
     const s = SCHRITTE[i];
+    // Neu einsetzen statt umschalten: dadurch laufen die Kennbilder im SVG
+    // bei jedem Schritt von vorn los
+    elBild.innerHTML = s.bild(istTouch);
     elTitel.textContent = s.titel;
     elWie.textContent = istTouch ? s.touch : s.desktop;
     karte.classList.remove("gelungen");
@@ -127,6 +179,7 @@ export function erstelleOnboarding({ camera, steuerung, istTouch }) {
 
   function hakeAb() {
     const s = SCHRITTE[index];
+    elBild.innerHTML = BILD_HAKEN; // zeichnet sich selbst
     elTitel.textContent = s.lob;
     elWie.textContent = "";
     karte.classList.add("gelungen");
