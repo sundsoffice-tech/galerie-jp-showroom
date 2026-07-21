@@ -28,6 +28,11 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
   let yawVel = 0;
   camera.rotation.set(0, 0, 0);
 
+  // Geführter Blick: nur links/rechts, Augenhöhe bleibt Augenhöhe.
+  // Spielraum steht in konfig.js (blickGrenzePitch, 0 = gesperrt).
+  const pitchGrenze = Math.max(0, B.blickGrenzePitch ?? 1.15);
+  const begrenzePitch = (p) => THREE.MathUtils.clamp(p, -pitchGrenze, pitchGrenze);
+
   // Bewegung
   const vel = new THREE.Vector2(); // x, z
   const joy = { x: 0, y: 0 }; // wird von joystick.js beschrieben
@@ -145,7 +150,7 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     bewegt += Math.abs(dx) + Math.abs(dy);
     if (fokus) return;
     zielYaw -= dx * B.drehempfindlichkeit;
-    zielPitch = THREE.MathUtils.clamp(zielPitch - dy * B.drehempfindlichkeit, -1.15, 1.15);
+    zielPitch = begrenzePitch(zielPitch - dy * B.drehempfindlichkeit);
     dxLetzt = dx;
   });
 
@@ -373,6 +378,9 @@ export function erstelleSteuerung({ camera, dom, scene, boden, klickbare, hinder
     }
     const g = 1 - Math.exp(-B.drehglaettung * dt);
     yaw += (zielYaw - yaw) * g;
+    // Auch nach einer Kamerafahrt (die zielt exakt auf die Bildmitte) läuft
+    // der Blick von selbst wieder in den erlaubten Bereich zurück
+    zielPitch = begrenzePitch(zielPitch);
     pitch += (zielPitch - pitch) * g;
 
     if (tween) {

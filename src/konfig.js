@@ -48,6 +48,12 @@ export const KONFIG = {
     beschleunigung: 15, // Anfahren (höher = direkter)
     daempfung: 6.5, // Ausrollen (höher = schnelleres Stoppen)
     drehempfindlichkeit: 0.0042, // Maus/Touch-Umsehen
+    // Der Rundgang ist bewusst geführt: Der Blick bleibt auf Augenhöhe und
+    // schwenkt nur nach links und rechts — wie beim Gang durch eine echte
+    // Galerie, in der man auch nicht an die Decke starrt. Die Werke hängen
+    // mit der Bildmitte auf Augenhöhe, es geht also nichts verloren.
+    // 0 = ganz gesperrt · Wert in Bogenmaß gibt Spielraum (0.35 ≈ 20°).
+    blickGrenzePitch: 0,
     drehglaettung: 13, // Glättung des Blicks (höher = direkter)
     drehnachlauf: 5, // Ausschwingen nach dem Loslassen
     bobAmplitude: 0.016, // Geh-Wippen in Metern (0 = aus)
