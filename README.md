@@ -110,6 +110,14 @@ bearbeiten → herunterladen → auf GitHub ersetzen; Fotos manuell nach
 }
 ```
 
+**Zur Plakette:** Aus Betrachterabstand bekommt das Schild an der Wand rund
+100 Bildpunkte Breite. Darunter ist Schrift nicht mehr aufzulösen, egal wie
+hoch die Textur ist — vier Zeilen ergaben dort sieben Bildpunkte Zeilenhöhe
+und damit grauen Brei. Deshalb trägt die Plakette wie im Museum nur wenige,
+groß gesetzte Angaben: **Titel, Künstler mit Jahr, Preis.** Technik und Maße
+stehen im Werkpanel, das ein Klick öffnet. Wer am Layout schraubt, sollte das
+Ergebnis immer in dieser Größe beurteilen, nicht am 1024er Entwurf.
+
 Die Galerie **hängt die Wände automatisch** (Position, Rahmen, Lichtinsel,
 Strahler, Plakette). Pro Saal: 6 Plätze an den Längswänden, +2 an der
 Ost-Stirnwand im letzten Saal. Die Eingangswand (West) bleibt frei — sie ist
@@ -175,6 +183,13 @@ npm run test:offline # … und den Offline-Start (Service Worker) prüfen
 npm run test:live    # alles gegen die veröffentlichte Seite (inkl. offline)
 ```
 
+**`test:live` allein laufen lassen.** Der Testlauf rendert den Saal auf einer
+Software-GPU mit wenigen Bildern je Sekunde; läuft nebenher noch ein zweiter
+Test oder ein Dev-Server, verhungert Playwrights Klickbarkeitsprüfung und
+meldet einen Totalausfall, den es nicht gibt. Bei so einem Befund erst die
+Seite selbst nachmessen (ist `#enter` da und sichtbar, was sagt
+`window.__galerie.datenquelle`?), bevor man der Meldung glaubt.
+
 Der Test braucht einmalig `npx playwright install chromium`. Er hat u. a.
 aufgedeckt, dass die Blätter-Pfeile den „Sammlung"-Knopf überdeckten und der
 Warenkorb nach einer Reservierung offen blieb — lohnt sich also vor jedem Deploy.
@@ -198,12 +213,18 @@ Weiterbauen keine externen Einbindungen hinzufügen.
 - Steuerung: Ziehen = Umsehen · WASD/Klick auf Boden = Gehen · Klick auf
   Werk = Bogen-Kamerafahrt + Panel (2. Klick = Nahzoom) · ESC = schließen ·
   Touch: Joystick + Tippen, Bottom-Sheets, Blick-Label
+- **Geführter Blick**: Die Kamera schwenkt nur nach links und rechts, nie
+  nach oben oder unten — die Werke hängen mit der Bildmitte auf Augenhöhe,
+  es geht also nichts verloren. Spielraum bei Bedarf über
+  `besucher.blickGrenzePitch` in `src/konfig.js` (0 = gesperrt).
 - **Mini-Onboarding** (`src/onboarding.js`): beim ersten Besuch nennt eine
   Karte drei Handgriffe — umsehen, gehen, ein Werk öffnen — und hakt jeden
   ab, sobald der Besucher ihn *getan* hat. Gemessen wird allein an der
   Kamera (gedrehter Winkel, gelaufene Strecke, Fokus), das Modul greift
-  weder in Steuerung noch UI ein. Wer den Handgriff schon konnte, bekommt
-  sofort den Haken statt einer Belehrung. Danach ist es dauerhaft weg
-  (`localStorage`), und die Eintrittsseite nennt wieder nur kurz die
-  Bedienung. Erzwingen/abschalten zum Vorführen: `?onboarding=1` bzw. `=0`.
+  weder in Steuerung noch UI ein. Jeder Schritt **macht seine Geste vor**
+  (Inline-SVG + CSS, keine Datei, kein fremder Server); ist sie getan,
+  zeichnet sich an derselben Stelle ein Haken. Wer den Handgriff schon
+  konnte, bekommt sofort den Haken statt einer Belehrung. Danach ist es
+  dauerhaft weg (`localStorage`), und die Eintrittsseite nennt wieder nur
+  kurz die Bedienung. Vorführen/abschalten: `?onboarding=1` bzw. `=0`.
 - Deep-Links: `#w-005` fährt nach dem Eintreten direkt vor das Werk

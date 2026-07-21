@@ -537,10 +537,16 @@ export function erstelleSzene(canvas) {
     // Plakette rechts neben dem Werk — als physisches Acrylschild.
     // Museums-Konvention: fester Abstand zur Rahmenkante, alle Plaketten
     // hängen auf EINER Linie (Oberkante 1,45 m), egal wie groß das Werk ist.
-    const plakX = rahmenBreite / 2 + 0.18 + 0.17;
+    // Aus Betrachterabstand bekommt das Schild nur rund 70 Bildpunkte
+    // Breite — darunter ist keine Schrift mehr aufzulösen, egal wie hoch die
+    // Textur ist. Deshalb: etwas größer als ein echtes Museumsschild, und
+    // die Textur trägt nur noch wenige, große Angaben (s. plakettenCanvas).
+    const PLAK_B = 0.4;
+    const PLAK_H = 0.235;
+    const plakX = rahmenBreite / 2 + 0.18 + PLAK_B / 2;
     const plakY = 1.45 - 0.1 - bildY; // Welthöhe der Plakettenmitte: 1,35 m
     const schild = new THREE.Mesh(
-      new THREE.BoxGeometry(0.345, 0.205, 0.006),
+      new THREE.BoxGeometry(PLAK_B + 0.005, PLAK_H + 0.005, 0.006),
       new THREE.MeshStandardMaterial({ color: 0xf2eee6, roughness: 0.5 })
     );
     schild.position.set(plakX, plakY, 0.008);
@@ -548,8 +554,10 @@ export function erstelleSzene(canvas) {
     const plakTex = alsTextur(plakettenCanvas(werk));
     plakTex.anisotropy = ANISO; // sonst wird der Text aus schrägem Blick matschig
     const plakette = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.34, 0.2),
-      new THREE.MeshBasicMaterial({ map: plakTex })
+      new THREE.PlaneGeometry(PLAK_B, PLAK_H),
+      // Unbeleuchtet, damit die Schrift überall trägt — aber leicht
+      // abgetönt, sonst steht ein Leuchtkasten im abgedunkelten Saal
+      new THREE.MeshBasicMaterial({ map: plakTex, color: 0xdcd6ca })
     );
     plakette.position.set(plakX, plakY, 0.012);
     plakette.userData = { werkId: werk.id, istPlakette: true };

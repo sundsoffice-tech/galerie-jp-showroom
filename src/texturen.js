@@ -355,40 +355,97 @@ function zeilenumbruch(ctx, text, x, y, maxB, zeilenH) {
   if (zeile) ctx.fillText(zeile, x, y);
 }
 
-// ————— Plakette — doppelte Auflösung, ruhiges Raster, Serifen-Titel —————
+// ————— Plakette —————
+// Das Schild ist 34 cm breit und wird aus rund 1,7 m gelesen — dabei bleiben
+// ihm keine 150 Bildpunkte. Vier Textzeilen darauf sind deshalb prinzipiell
+// nicht scharf zu bekommen, egal wie hoch die Textur aufgelöst ist: die
+// Technikzeile landete bei sieben Bildpunkten Höhe. Also wie im echten
+// Museum: wenige Angaben, groß gesetzt. Technik und Maße stehen ohnehin im
+// Werkpanel, das ein Klick öffnet.
 export function plakettenCanvas(werk) {
+  const W = 1024;
+  const H = 602; // gleiches Seitenverhältnis wie die Schildfläche (0,34 × 0,20)
   const c = document.createElement("canvas");
-  c.width = 816;
-  c.height = 480;
+  c.width = W;
+  c.height = H;
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#f2eee6";
-  ctx.fillRect(0, 0, 816, 480);
-  const rand = 52;
+  ctx.fillRect(0, 0, W, H);
+  // Papierton zum Rand hin minimal abfallend — sonst wirkt es wie Kunststoff
+  const schein = ctx.createLinearGradient(0, 0, 0, H);
+  schein.addColorStop(0, "rgba(255,255,255,0.5)");
+  schein.addColorStop(1, "rgba(120,110,95,0.10)");
+  ctx.fillStyle = schein;
+  ctx.fillRect(0, 0, W, H);
+
+  const rand = 62;
+  const maxB = W - rand * 2;
+
   ctx.fillStyle = "#b59f68";
-  ctx.fillRect(rand, 62, 96, 5);
-  ctx.fillStyle = "#1d1b18";
-  ctx.font = '500 56px "Cormorant Garamond", Georgia, serif';
-  ctx.fillText(kuerze(ctx, werk.titel, 816 - rand * 2), rand, 168);
-  ctx.font = "italic 40px Georgia, serif";
+  ctx.fillRect(rand, 70, 128, 7);
+
+  // Titel: umbrechen statt abschneiden — ein Werktitel gehört vollständig
+  // aufs Schild. Ab drei Zeilen rückt die Schrift eine Stufe herunter.
+  ctx.fillStyle = "#191714";
+  let titelGroesse = 116;
+  let zeilen = umbrechen(ctx, werk.titel, maxB, `500 ${titelGroesse}px "Cormorant Garamond", Georgia, serif`);
+  if (zeilen.length > 2) {
+    titelGroesse = 92;
+    zeilen = umbrechen(ctx, werk.titel, maxB, `500 ${titelGroesse}px "Cormorant Garamond", Georgia, serif`);
+  }
+  ctx.font = `500 ${titelGroesse}px "Cormorant Garamond", Georgia, serif`;
+  let y = 70 + 7 + titelGroesse + 34;
+  for (const z of zeilen.slice(0, 3)) {
+    ctx.fillText(z, rand, y);
+    y += titelGroesse * 0.98;
+  }
+
+  ctx.font = 'italic 66px "Cormorant Garamond", Georgia, serif';
   ctx.fillStyle = "#4c473f";
-  ctx.fillText(kuerze(ctx, `${werk.kuenstler}, ${werk.jahr}`, 816 - rand * 2), rand, 240);
-  ctx.font = "34px Georgia, serif";
-  ctx.fillStyle = "#6a645a";
-  ctx.fillText(kuerze(ctx, werk.technik, 816 - rand * 2), rand, 302);
+  ctx.fillText(kuerze(ctx, `${werk.kuenstler}, ${werk.jahr}`, maxB), rand, y + 22);
+
+  // Fußzeile: Preis oder der rote Punkt der Galerien, abgesetzt durch eine
+  // Haarlinie — sonst steht der Preis in einem unmotivierten Loch
+  const fussY = H - 54;
+  ctx.strokeStyle = "rgba(90,82,68,0.28)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(rand, fussY - 96);
+  ctx.lineTo(W - rand, fussY - 96);
+  ctx.stroke();
   if (!werk.verkauft) {
-    ctx.font = "500 42px Georgia, serif";
+    ctx.font = '500 62px "Cormorant Garamond", Georgia, serif';
     ctx.fillStyle = "#8a6d3d";
-    ctx.fillText(formatPreis(werk.preis), rand, 400);
+    ctx.fillText(formatPreis(werk.preis), rand, fussY);
   } else {
     ctx.fillStyle = "#9e3b32";
     ctx.beginPath();
-    ctx.arc(rand + 16, 386, 16, 0, Math.PI * 2);
+    ctx.arc(rand + 20, fussY - 20, 20, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#4c473f";
-    ctx.font = "36px Georgia, serif";
-    ctx.fillText("Verkauft", rand + 52, 400);
+    ctx.font = '500 58px "Cormorant Garamond", Georgia, serif';
+    ctx.fillText("Verkauft", rand + 62, fussY);
   }
   return c;
+}
+
+// Bricht auf maxB um und gibt die Zeilen zurück, statt sie zu zeichnen —
+// so lässt sich vorher entscheiden, ob die Schriftgröße noch passt.
+function umbrechen(ctx, text, maxB, schrift) {
+  ctx.font = schrift;
+  const zeilen = [];
+  let zeile = "";
+  for (const wort of String(text || "").split(" ")) {
+    const test = zeile ? zeile + " " + wort : wort;
+    if (ctx.measureText(test).width > maxB && zeile) {
+      zeilen.push(zeile);
+      zeile = wort;
+    } else {
+      zeile = test;
+    }
+  }
+  if (zeile) zeilen.push(zeile);
+  return zeilen;
 }
 
 function kuerze(ctx, text, maxB) {

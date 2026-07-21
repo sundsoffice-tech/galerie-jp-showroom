@@ -66,15 +66,25 @@ await pruefe("Erster Handgriff wird angeboten", async () => {
   return `„${k.titel}" · ${k.wie}`;
 });
 
+const istGelungen = () =>
+  seite.evaluate(() => !!document.getElementById("onboarding")?.classList.contains("gelungen"));
+
 await pruefe("Umsehen hakt den ersten Handgriff ab", async () => {
-  await seite.mouse.move(640, 420);
-  await seite.mouse.down();
-  for (let x = 640; x >= 240; x -= 40) {
-    await seite.mouse.move(x, 420);
-    await seite.waitForTimeout(30);
+  // Solange schwenken, bis der Schritt anerkannt ist. Ein einzelner fester
+  // Zug reicht nicht verlässlich: unter Last fasst der Browser Zeigerwege
+  // zusammen, dann kommt weniger Drehung an, als die Geste hergibt.
+  for (let runde = 0; runde < 10 && !(await istGelungen()); runde++) {
+    const von = runde % 2 ? 340 : 940;
+    const nach = runde % 2 ? 940 : 340;
+    await seite.mouse.move(von, 420);
+    await seite.mouse.down();
+    for (let i = 1; i <= 12; i++) {
+      await seite.mouse.move(von + ((nach - von) * i) / 12, 420);
+      await seite.waitForTimeout(30);
+    }
+    await seite.mouse.up();
+    await seite.waitForTimeout(500);
   }
-  await seite.mouse.up();
-  await seite.waitForTimeout(700);
   const k = await karte();
   if (!k.gelungen) throw new Error(`nicht abgehakt, Karte zeigt „${k.titel}"`);
   return `„${k.titel}"`;
