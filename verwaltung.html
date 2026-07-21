@@ -194,6 +194,34 @@
     .kapazitaet { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--ivory-dim); white-space: nowrap; }
     .kapazitaet.voll { color: #d3867c; }
 
+    /* Impressum & Datenschutz */
+    .opt { color: var(--ivory-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .recht-vorschau {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+      gap: 1.2rem;
+      margin-top: 1rem;
+    }
+    .recht-vorschau h3 {
+      font-size: 0.66rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--brass);
+      margin-bottom: 0.5rem;
+    }
+    .recht-vorschau pre {
+      white-space: pre-wrap;
+      font-family: inherit;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      color: var(--ivory-dim);
+      background: #14110c;
+      border: 1px solid var(--line);
+      padding: 0.9rem 1rem;
+      max-height: 22rem;
+      overflow: auto;
+    }
+
     /* Künstler */
     .kuenstler-zeile {
       display: grid;
@@ -552,6 +580,54 @@
           <input id="g-web3" placeholder="leer = Demo-Modus · Key von web3forms.com" />
         </label>
       </div>
+    </section>
+
+    <section id="abschnitt-recht">
+      <h2>Impressum &amp; Datenschutz</h2>
+      <p class="hinweis" style="margin-bottom:1rem">
+        Tragen Sie hier nur Ihre Angaben ein — Impressum, Datenschutzerklärung
+        und Kontaktseite setzen sich daraus von selbst zusammen. Die
+        Datenschutzerklärung beschreibt genau das, was der Showroom wirklich
+        tut, und ergänzt die Abschnitte zu Reservierung und Zahlung
+        automatisch, sobald Sie einen Web3Forms-Key bzw. Stripe-Links
+        hinterlegen. <b>Beides ist Pflicht, bevor die Seite öffentlich
+        beworben wird.</b> Lassen Sie den fertigen Text einmal von Ihrer
+        Anwältin oder Ihrem Händlerverband gegenlesen — das hier ist eine
+        sorgfältige Vorlage, aber keine Rechtsberatung.
+      </p>
+      <div class="felder">
+        <label>Inhaber:in / Vertretungsberechtigte:r
+          <input id="r-inhaber" placeholder="Vor- und Nachname" />
+        </label>
+        <label>Straße und Hausnummer<input id="r-strasse" /></label>
+        <label>PLZ<input id="r-plz" /></label>
+        <label>Ort<input id="r-ort" /></label>
+        <label>Land<input id="r-land" placeholder="Deutschland" /></label>
+        <label>Telefon<input id="r-telefon" /></label>
+        <label>USt-IdNr. <span class="opt">(falls vorhanden)</span>
+          <input id="r-ustId" placeholder="DE123456789" />
+        </label>
+        <label>Registereintrag <span class="opt">(falls vorhanden)</span>
+          <input id="r-register" placeholder="Amtsgericht …, HRB …" />
+        </label>
+        <label>Zuständige Datenschutz-Aufsichtsbehörde <span class="opt">(optional)</span>
+          <input id="r-aufsichtDatenschutz" placeholder="z. B. Der Hamburgische Beauftragte für Datenschutz" />
+        </label>
+        <label>Öffnungszeiten <span class="opt">(optional, für die Kontaktseite)</span>
+          <input id="r-oeffnungszeiten" placeholder="Di–Fr 11–18 Uhr, Sa 11–16 Uhr" />
+        </label>
+      </div>
+      <label style="display:block; margin-top:0.9rem">Zusatz fürs Impressum <span class="opt">(optional)</span>
+        <textarea id="r-zusatz" rows="2" placeholder="z. B. Berufsbezeichnung, Kammer, Haftungshinweise"></textarea>
+      </label>
+      <details style="margin-top:1.1rem">
+        <summary>So sieht es für Ihre Besucher aus</summary>
+        <div class="recht-vorschau">
+          <div><h3>Impressum</h3><pre id="vs-impressum"></pre></div>
+          <div><h3>Datenschutz</h3><pre id="vs-datenschutz"></pre></div>
+          <div><h3>Kontakt</h3><pre id="vs-kontakt"></pre></div>
+        </div>
+      </details>
     </section>
   </main>
 
@@ -1267,6 +1343,7 @@
       $("g-waehrung").value = daten.galerie.waehrung || "EUR";
       $("g-email").value = daten.galerie.email || "";
       $("g-web3").value = daten.galerie.web3formsKey || "";
+      fuelleRechtsFelder();
       renderSaele();
       renderWerke();
       setzeStatus();
@@ -1277,8 +1354,75 @@
         $(id).addEventListener("input", () => {
           daten.galerie[feld] = $(id).value;
           markiereGeaendert();
+          zeigeRechtsVorschau();
         });
       });
+
+    // ————— Impressum & Datenschutz —————
+    // Die Texte selbst stehen NICHT hier, sondern in src/rechtliches.js —
+    // dieselbe Datei, die der Showroom benutzt. Wir laden sie nach, damit es
+    // keine zweite Fassung der Rechtstexte gibt, die auseinanderlaufen kann.
+    // Beim Öffnen per Doppelklick (file://) verbietet der Browser das Laden;
+    // dann verweist die Vorschau auf den Vorschau-Knopf.
+    const RECHT_FELDER = [
+      "inhaber", "strasse", "plz", "ort", "land", "telefon", "ustId",
+      "register", "aufsichtDatenschutz", "oeffnungszeiten", "zusatz",
+    ];
+    let rechtsTexte = null;
+    import("./src/rechtliches.js")
+      .then((m) => { rechtsTexte = m; zeigeRechtsVorschau(); })
+      .catch(() => zeigeRechtsVorschau());
+
+    RECHT_FELDER.forEach((feld) => {
+      const el = $("r-" + feld);
+      if (!el) return;
+      el.addEventListener("input", () => {
+        (daten.galerie.rechtliches ||= {})[feld] = el.value;
+        markiereGeaendert();
+        zeigeRechtsVorschau();
+        renderUebersicht();
+      });
+    });
+
+    function fuelleRechtsFelder() {
+      const r = daten.galerie.rechtliches || {};
+      RECHT_FELDER.forEach((feld) => {
+        const el = $("r-" + feld);
+        if (el) el.value = r[feld] || "";
+      });
+      zeigeRechtsVorschau();
+    }
+
+    function zeigeRechtsVorschau() {
+      if (!daten) return;
+      const ziel = { impressum: "vs-impressum", datenschutz: "vs-datenschutz", kontakt: "vs-kontakt" };
+      if (!rechtsTexte) {
+        const hinweis =
+          "Die Textvorschau braucht die Dateien des Projekts. Öffnen Sie die " +
+          "Verwaltung über den Entwicklungsserver — oder klicken Sie unten " +
+          "auf „Vorschau“: dort steht der fertige Text im Showroom selbst.";
+        Object.values(ziel).forEach((id) => { if ($(id)) $(id).textContent = hinweis; });
+        return;
+      }
+      if ($(ziel.impressum)) $(ziel.impressum).textContent = rechtsTexte.impressumText(daten.galerie);
+      if ($(ziel.datenschutz))
+        $(ziel.datenschutz).textContent = rechtsTexte.datenschutzText(daten.galerie, daten.werke);
+      if ($(ziel.kontakt)) $(ziel.kontakt).textContent = rechtsTexte.kontaktText(daten.galerie);
+    }
+
+    // Welche Pflichtangaben fehlen? Bewusst hier gespiegelt, damit der
+    // Überblick auch ohne geladenes Modul warnen kann (file://-Fall).
+    function fehlendeRechtsangaben() {
+      const r = daten.galerie.rechtliches || {};
+      const fehlt = [];
+      const leer = (v) => !(v || "").trim();
+      if (leer(daten.galerie.name)) fehlt.push("Name der Galerie");
+      if (leer(r.inhaber)) fehlt.push("Inhaber:in");
+      if (leer(r.strasse)) fehlt.push("Straße");
+      if (leer(r.plz) || leer(r.ort)) fehlt.push("PLZ und Ort");
+      if (leer(daten.galerie.email)) fehlt.push("Kontakt-E-Mail");
+      return fehlt;
+    }
 
     // ————— Überblick: Kennzahlen und offene Punkte —————
     // Beantwortet beim Öffnen die zwei Fragen, die der Händler wirklich hat:
@@ -1347,6 +1491,15 @@
           });
         }
       });
+      // Rechtliches zuerst: ohne Impressum darf die Seite nicht öffentlich
+      // beworben werden — das wiegt schwerer als ein fehlendes Foto.
+      const rechtFehlt = fehlendeRechtsangaben();
+      if (rechtFehlt.length) {
+        punkte.unshift({
+          text: `Impressum unvollständig — es fehlt: ${rechtFehlt.join(", ")}. Pflicht, bevor die Seite öffentlich beworben wird.`,
+          abschnitt: "abschnitt-recht",
+        });
+      }
       if (!daten.galerie.web3formsKey?.trim()) {
         punkte.push({ text: "Kein Web3Forms-Schlüssel — Reservierungen kommen nicht per E-Mail an" });
       }
@@ -1379,6 +1532,13 @@
             $("suche").value = "";
             renderWerke();
             $("werke-sektion").scrollIntoView({ behavior: "smooth" });
+          });
+        } else if (p.abschnitt) {
+          zeile.title = "Dorthin springen";
+          zeile.addEventListener("click", () => {
+            const ziel = $(p.abschnitt);
+            ziel?.scrollIntoView({ behavior: "smooth" });
+            ziel?.querySelector("input")?.focus({ preventScroll: true });
           });
         } else {
           zeile.title = "Zu den Stammdaten";

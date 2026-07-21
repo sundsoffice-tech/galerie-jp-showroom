@@ -358,6 +358,73 @@ await pruefe("Stimmung des Saals wirkt bis in den Raum", async () => {
   return `dunkler Saal, alle 8 gehängt (${nord} Nord · ${sued} Süd · ${stirn} Stirnwand)`;
 });
 
+await pruefe("Impressum entsteht aus Feldern und erreicht den Besucher", async () => {
+  const vorher = await seite.evaluate(() =>
+    [...document.querySelectorAll(".offener-punkt")].some((e) => /Impressum unvollständig/.test(e.textContent))
+  );
+  if (!vorher) throw new Error("fehlendes Impressum wurde gar nicht bemängelt");
+
+  for (const [id, wert] of [
+    ["r-inhaber", "Jonas Petersen"],
+    ["r-strasse", "Deichstraße 14"],
+    ["r-plz", "20459"],
+    ["r-ort", "Hamburg"],
+    ["r-telefon", "+49 40 123456"],
+    ["r-ustId", "DE812345678"],
+  ]) {
+    await seite.fill("#" + id, wert);
+  }
+  await seite.fill("#g-email", "kontakt@galerie-jp.de");
+  await seite.waitForTimeout(400);
+
+  const nachher = await seite.evaluate(() =>
+    [...document.querySelectorAll(".offener-punkt")].some((e) => /Impressum unvollständig/.test(e.textContent))
+  );
+  if (nachher) throw new Error("Hinweis blieb trotz vollständiger Angaben stehen");
+
+  // Der Weg, auf den es ankommt: steht es auch im Showroom?
+  await seite.click("#vorschau-oeffnen");
+  await seite.waitForTimeout(7000);
+  const rahmen = seite.frameLocator("#vorschau-rahmen");
+  let text;
+  try {
+    // Die Fußzeile mit den Rechts-Links blendet erst mit dem Eintreten ein
+    await rahmen.locator("#enter").click({ timeout: 15000 });
+    await seite.waitForTimeout(5000);
+    await rahmen.locator('[data-legal="impressum"]').click({ timeout: 15000 });
+    await seite.waitForTimeout(600);
+    text = await rahmen.locator("#legal-text").textContent({ timeout: 10000 });
+  } finally {
+    await seite.click("#vorschau-schliessen").catch(() => {});
+    await seite.waitForTimeout(400);
+  }
+  for (const pflicht of ["Deichstraße 14", "20459 Hamburg", "DE812345678", "§ 5 DDG"]) {
+    if (!text.includes(pflicht)) throw new Error(`„${pflicht}" fehlt im Impressum des Showrooms`);
+  }
+  return "Felder → Impressum → im Showroom sichtbar (inkl. USt-IdNr.)";
+});
+
+await pruefe("Datenschutzerklärung passt sich an die Konfiguration an", async () => {
+  // Falls ein vorheriger Schritt die Vorschau offen ließ, versperrt sie die
+  // Felder — erst zumachen, sonst scheitert dieser Schritt an fremder Ursache
+  await seite.click("#vorschau-schliessen").catch(() => {});
+  await seite.waitForTimeout(300);
+  const ohne = await seite.evaluate(() => document.getElementById("vs-datenschutz").textContent);
+  if (!/nicht aktiv/.test(ohne)) throw new Error("ohne Web3Forms-Key fehlt der Hinweis dazu");
+  if (/Stripe/.test(ohne)) throw new Error("Stripe erwähnt, obwohl kein Zahlungslink hinterlegt ist");
+
+  await seite.fill("#g-web3", "demo-key-0000");
+  await seite.evaluate(() => {
+    daten.werke[0].stripeLink = "https://buy.stripe.com/test_123";
+  });
+  await seite.fill("#g-email", "kontakt@galerie-jp.de"); // löst das Neuzeichnen aus
+  await seite.waitForTimeout(400);
+  const mit = await seite.evaluate(() => document.getElementById("vs-datenschutz").textContent);
+  if (!/Web3Forms/.test(mit)) throw new Error("Web3Forms-Abschnitt fehlt trotz Schlüssel");
+  if (!/Stripe Payments Europe/.test(mit)) throw new Error("Stripe-Abschnitt fehlt trotz Zahlungslink");
+  return "Abschnitte zu Reservierung und Zahlung erscheinen erst, wenn sie zutreffen";
+});
+
 console.log(`=== VERWALTUNG — ${SEITE} ===`);
 schritte.forEach((s) => console.log(s));
 console.log(`=== SEITENFEHLER: ${fehler.length} ===`);

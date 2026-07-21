@@ -3,6 +3,7 @@
 // Jedes Werk ist ein Unikat: nur einmal sammelbar, nach Verkauf gesperrt.
 
 import {
+  werke,
   raeume,
   raumById,
   werkById,
@@ -12,6 +13,12 @@ import {
   kuenstlerBio,
   galerie,
 } from "./katalog.js";
+import {
+  impressumText,
+  datenschutzText,
+  kontaktText,
+  fehlendeAngaben,
+} from "./rechtliches.js";
 import * as klang from "./klang.js";
 import { machBottomSheet } from "./bottomsheet.js";
 import { IST_TOUCH } from "./geraet.js";
@@ -565,27 +572,29 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
   });
 
   // ————— Rechtliches —————
+  // Die Texte entstehen aus den Angaben der Galerie (s. rechtliches.js) und
+  // werden bei jedem Öffnen frisch gesetzt — so wirkt eine Veröffentlichung
+  // aus der Verwaltung sofort, ohne Build.
   const legal = $("legal");
-  const LEGAL_TEXTE = {
-    impressum: {
-      titel: "Impressum",
-      text: "Angaben gemäß § 5 DDG.\n\n[Name der Galerie]\n[Inhaber:in]\n[Straße Hausnummer]\n[PLZ Ort]\n\nTelefon: [Nummer]\nE-Mail: [Adresse]\nUSt-IdNr.: [Nummer]\n\nDiese Angaben werden vor dem Go-Live durch die Galerie ergänzt.",
-    },
-    datenschutz: {
-      titel: "Datenschutz",
-      text: "Beim bloßen Besuch dieser Seite werden keine Daten an Dritte übertragen: Schriften werden von unserem eigenen Server ausgeliefert, es gibt keine Tracker und keine Werbe-Cookies. Ihre Sammlung wird ausschließlich lokal in Ihrem Browser gespeichert.\n\nBeim Absenden einer Reservierung werden Ihre Angaben (Name, E-Mail, optional Telefon und Nachricht) zur Bearbeitung Ihrer Anfrage per Web3Forms (form-to-email-Dienst) an die Galerie übermittelt (Art. 6 Abs. 1 lit. b DSGVO).\n\n[Vollständige Datenschutzerklärung wird vor dem Go-Live durch die Galerie ergänzt.]",
-    },
-    kontakt: {
-      titel: "Kontakt",
-      text: "Wir freuen uns auf Ihre Nachricht.\n\n[E-Mail und Telefonnummer der Galerie — werden vor dem Go-Live ergänzt.]\n\nBesichtigungen einzelner Werke sind nach Vereinbarung jederzeit möglich.",
-    },
+  const LEGAL_TITEL = {
+    impressum: "Impressum",
+    datenschutz: "Datenschutz",
+    kontakt: "Kontakt",
   };
+  function legalText(art) {
+    if (art === "impressum") return impressumText(galerie);
+    if (art === "datenschutz") return datenschutzText(galerie, werke);
+    return kontaktText(galerie);
+  }
   document.querySelectorAll("[data-legal]").forEach((b) =>
     b.addEventListener("click", () => {
-      const eintrag = LEGAL_TEXTE[b.dataset.legal];
-      $("legal-eyebrow").textContent = "Rechtliches";
-      $("legal-titel").textContent = eintrag.titel;
-      $("legal-text").textContent = eintrag.text;
+      const art = b.dataset.legal;
+      const unvollstaendig = fehlendeAngaben(galerie);
+      $("legal-eyebrow").textContent = unvollstaendig.length
+        ? "Rechtliches — Angaben noch unvollständig"
+        : "Rechtliches";
+      $("legal-titel").textContent = LEGAL_TITEL[art];
+      $("legal-text").textContent = legalText(art);
       legal.classList.remove("hidden");
       verlaufAnlegen();
       merkeFokus();

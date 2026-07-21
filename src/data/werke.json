@@ -3,7 +3,22 @@
     "name": "Galerie JP",
     "waehrung": "EUR",
     "email": "",
-    "web3formsKey": ""
+    "web3formsKey": "",
+    "rechtliches": {
+      "inhaber": "",
+      "strasse": "",
+      "plz": "",
+      "ort": "",
+      "land": "Deutschland",
+      "telefon": "",
+      "ustId": "",
+      "register": "",
+      "aufsicht": "",
+      "aufsichtDatenschutz": "",
+      "oeffnungszeiten": "",
+      "zusatz": "",
+      "stand": ""
+    }
   },
   "raeume": [
     {

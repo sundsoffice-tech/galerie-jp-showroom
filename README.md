@@ -78,6 +78,17 @@ bearbeiten → herunterladen → auf GitHub ersetzen; Fotos manuell nach
 - **Entwürfe** (`sichtbar: false`): Werke vorbereiten, ohne sie zu zeigen.
 - **Mehrfachauswahl** für Ausstellungswechsel: mehrere Werke auf einmal in
   einen anderen Saal, auf verkauft/verfügbar, auf Entwurf oder löschen.
+- **Impressum & Datenschutz ohne Rechtsprosa**: Der Händler trägt nur
+  Anschrift, Kontakt und Steuernummer in Felder ein — Impressum,
+  Datenschutzerklärung und Kontaktseite setzen sich daraus zusammen
+  (`src/rechtliches.js`, dieselbe Datei nutzt der Showroom). Die
+  Datenschutzerklärung beschreibt, was der Showroom **tatsächlich** tut
+  (GitHub-Pages-Hosting inkl. US-Transfer, Katalog-Nachladen von
+  raw.githubusercontent, Sammlung nur im localStorage, keine Cookies/Tracker)
+  und ergänzt die Abschnitte zu Reservierung und Zahlung erst dann, wenn ein
+  Web3Forms-Key bzw. Stripe-Links hinterlegt sind. Fehlende Pflichtangaben
+  stehen als erster Punkt im Überblick. **Das ist eine sorgfältige Vorlage,
+  keine Rechtsberatung** — vor dem Go-Live einmal anwaltlich prüfen lassen.
 - **Künstler**: Kurzbiografie je Künstler, erscheint aufklappbar im
   Werkpanel. Die Liste ergibt sich aus den Werken.
 - **Reihenfolge = Hängung**: ↑/↓ ordnen die Werke an den Wänden.
