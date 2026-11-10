@@ -2,11 +2,20 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
+  <!-- Schutzregeln im Dokument, weil GitHub Pages keine eigenen Kopfzeilen sendet.
+       Erlaubt ist nur, was die Galerie wirklich lädt: eigene Dateien, der Live-Katalog
+       und die Werkfotos aus dem Repo (raw.githubusercontent.com), der Formulardienst
+       für Reservierungen (api.web3forms.com). 'unsafe-inline' bei style-src bleibt,
+       weil die Steuerung style-Attribute direkt am Element setzt. Gleiche Regel wie in
+       netlify.toml; frame-ancestors wirkt als Meta-Angabe nicht und steht deshalb dort. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githubusercontent.com; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com https://api.web3forms.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <!-- kein user-scalable=no: Pinch-Zoom muss möglich bleiben (WCAG 1.4.4).
        Zoom-Konflikte im Rundgang verhindert touch-action: none auf dem Canvas. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Galerie JP — Virtueller Showroom</title>
   <meta name="description" content="Der virtuelle Showroom der Galerie JP: Drei Säle mit Malerei, Abstraktion und Fotografie — jedes Werk ein Unikat, direkt reservierbar. Begehbar in 3D." />
+  <link rel="canonical" href="https://sundsoffice-tech.github.io/galerie-jp-showroom/" />
   <meta name="theme-color" content="#0c0b09" />
   <!-- Installierbar als App: Vollbild ohne Browser-Leisten, eigenes Icon -->
   <link rel="manifest" href="./manifest.webmanifest" />
@@ -106,7 +115,8 @@
     </div>
     <button id="aw-stripe" class="btn-stripe hidden">Sofort erwerben</button>
     <div class="aw-sekundaer">
-      <a id="aw-inquiry" class="aw-textlink hidden" href="#">Unverbindlich anfragen</a>
+      <!-- „Unverbindlich anfragen" setzt ui.js als Mail-Verweis vor diesen Knopf,
+           sobald eine Galerie-Adresse gepflegt ist: ohne Adresse kein Ziel, also kein Verweis -->
       <button id="aw-share" class="aw-textlink">Link kopieren</button>
     </div>
     <p class="aw-sold hidden" id="aw-sold"><span class="dot"></span>Verkauft</p>
@@ -149,7 +159,7 @@
         <h2 class="modal-title">Ihre Angaben</h2>
         <div id="checkout-items"></div>
         <form id="checkout-form">
-          <input type="checkbox" name="botcheck" class="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <input type="checkbox" name="botcheck" class="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" aria-label="Bitte nicht ankreuzen — dieses Feld schützt vor automatischen Einsendungen" />
           <label>Name<input type="text" name="name" required autocomplete="name" /></label>
           <label>E-Mail<input type="email" name="email" required autocomplete="email" /></label>
           <label>Telefon (optional)<input type="tel" name="phone" autocomplete="tel" /></label>

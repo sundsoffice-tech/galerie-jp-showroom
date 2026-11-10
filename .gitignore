@@ -3,3 +3,7 @@ dist/
 .DS_Store
 *.log
 *.png
+# App-Symbole gehoeren ins Repo (Manifest und index.html verweisen darauf)
+!public/apple-touch-icon.png
+!public/icon-192.png
+!public/icon-512.png
