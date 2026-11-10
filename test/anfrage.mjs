@@ -49,9 +49,19 @@ async function oeffneWerk(seite) {
   });
 
   await oeffneWerk(seite);
-  await pruefe("Ohne Galerie-Adresse steht kein Anfrage-Verweis im Dokument", async () => {
-    const da = await seite.evaluate(() => Boolean(document.getElementById("aw-inquiry")));
-    if (da) throw new Error("Verweis vorhanden, obwohl keine Adresse gepflegt ist");
+  // Der eingebaute Katalog entscheidet, was hier richtig ist: Pflegt die Galerie ihre
+  // Adresse in src/data/werke.json, muss der Verweis da sein und ein mailto:-Ziel haben.
+  const katalog = JSON.parse(await readFile(new URL("../src/data/werke.json", import.meta.url), "utf8"));
+  const gepflegt = String(katalog?.galerie?.email || "").trim();
+  await pruefe(gepflegt
+    ? "Mit gepflegter Galerie-Adresse hat der Anfrage-Verweis ein mailto:-Ziel"
+    : "Ohne Galerie-Adresse steht kein Anfrage-Verweis im Dokument", async () => {
+    const ziel = await seite.evaluate(() => document.getElementById("aw-inquiry")?.getAttribute("href") ?? null);
+    if (gepflegt) {
+      if (!ziel || !ziel.startsWith("mailto:")) throw new Error(`Adresse gepflegt, Verweis fehlt oder ohne mailto: (${ziel})`);
+      return "vorhanden mit mailto:";
+    }
+    if (ziel !== null) throw new Error("Verweis vorhanden, obwohl keine Adresse gepflegt ist");
     return "korrekt abwesend";
   });
   await seite.close();
