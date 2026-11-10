@@ -262,15 +262,24 @@ export function erstelleUI({ aktualisiereVerkauft, steuerungRef }) {
     $("aw-price").textContent = formatPreis(werk.preis);
     setzeWerkBild($("aw-bild"), werk);
     $("aw-bild").alt = `${werk.titel}, ${werk.kuenstler}`;
-    // Anfrage-CTA per Mail (nur wenn eine Galerie-Adresse gepflegt ist)
-    const inquiry = $("aw-inquiry");
+    // Anfrage-CTA per Mail (nur wenn eine Galerie-Adresse gepflegt ist).
+    // Der Verweis steht nicht im HTML, sondern entsteht hier: ohne Adresse
+    // gäbe es kein Ziel — und ein Verweis ohne Ziel hat im Dokument nichts
+    // verloren (Vorleseprogramme und Prüfwerkzeuge melden ihn als tot).
+    let inquiry = $("aw-inquiry");
     if (galerie.email) {
-      inquiry.classList.remove("hidden");
+      if (!inquiry) {
+        inquiry = document.createElement("a");
+        inquiry.id = "aw-inquiry";
+        inquiry.className = "aw-textlink";
+        inquiry.textContent = "Unverbindlich anfragen";
+        $("aw-share").before(inquiry);
+      }
       inquiry.href = `mailto:${galerie.email}?subject=${encodeURIComponent(
         `Anfrage: ${werk.titel} — ${werk.kuenstler}`
       )}`;
     } else {
-      inquiry.classList.add("hidden");
+      inquiry?.remove();
     }
     // Deep-Link in die URL schreiben
     history.replaceState(null, "", `#${werkId}`);
